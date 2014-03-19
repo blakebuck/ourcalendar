@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using Our_Calendar.Models;
 
 namespace Our_Calendar.Controllers
 {
@@ -10,7 +11,9 @@ namespace Our_Calendar.Controllers
     {
         public ActionResult Index()
         {
-            ViewBag.Message = "Welcome to ASP.NET MVC!";
+            string fullName = CallDatabase.ReturnName();
+
+            ViewBag.Message = "Welcome " + fullName + "to ASP.NET MVC!";
 
             return View();
         }
