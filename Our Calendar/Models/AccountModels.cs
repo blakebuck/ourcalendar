@@ -28,7 +28,7 @@ namespace Our_Calendar.Models
             {
                 // Try to add user to the Users table in the database
                 cmd = connection.CreateCommand();
-                cmd.CommandText = "INSERT INTO Users(fullName, email, password, passcode) VALUES (@fullName, @email, @password)";
+                cmd.CommandText = "INSERT INTO Users(fullName, email, password) VALUES (@fullName, @email, @password)";
                 cmd.Parameters.AddWithValue("@fullName", registrationInfo.FullName);
                 cmd.Parameters.AddWithValue("@email", registrationInfo.Email);
                 cmd.Parameters.AddWithValue("@password", hashedPassword);
