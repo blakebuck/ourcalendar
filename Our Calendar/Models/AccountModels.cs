@@ -18,7 +18,8 @@ namespace Our_Calendar.Models
             byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
             System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
             byte[] hashedPassword = hashAlgo.ComputeHash(password);
-            string encryptedPassword = hashedPassword.ToString();
+            
+            string encryptedPassword = System.Text.Encoding.ASCII.GetString(hashedPassword);
 
             // Create database connection
             MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
