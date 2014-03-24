@@ -1,12 +1,62 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Globalization;
 using System.Web.Mvc;
 using System.Web.Security;
+using MySql.Data.MySqlClient;
 
 namespace Our_Calendar.Models
 {
+    public class UserManagementModel
+    {
+        // Returns a boolean (true = success adding user, false = user not added)
+        public static Boolean CreateUser(RegisterModel registrationInfo)
+        {
+            // Encrypt the password, by hashing it. (Salt could be add later)
+            byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
+            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
+            byte[] hashedPassword = hashAlgo.ComputeHash(password);
+
+            // Create database connection
+            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+            MySqlCommand cmd;
+            connection.Open();
+
+            try
+            {
+                // Try to add user to the Users table in the database
+                cmd = connection.CreateCommand();
+                cmd.CommandText = "INSERT INTO Users(fullName, email, password, passcode) VALUES (@fullName, @email, @password)";
+                cmd.Parameters.AddWithValue("@fullName", registrationInfo.FullName);
+                cmd.Parameters.AddWithValue("@email", registrationInfo.Email);
+                cmd.Parameters.AddWithValue("@password", hashedPassword);
+                cmd.ExecuteNonQuery();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }            
+        }
+
+        public static Boolean CheckPassword(string username, string password)
+        {
+
+            return false;
+        }
+    }
+
+    public class UserModel
+    {
+        [Required]
+        public int UserID { get; set; }
+        public string FullName { get; set; }
+        public string Email { get; set; }
+        public string Password { get; set; }
+
+    }
 
     public class ChangePasswordModel
     {
@@ -45,8 +95,8 @@ namespace Our_Calendar.Models
     public class RegisterModel
     {
         [Required]
-        [Display(Name = "User name")]
-        public string UserName { get; set; }
+        [Display(Name = "Full Name")]
+        public string FullName { get; set; }
 
         [Required]
         [DataType(DataType.EmailAddress)]
