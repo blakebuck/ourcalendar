@@ -77,15 +77,17 @@ namespace Our_Calendar.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (UserManagementModel.CreateUser(model))
+                if (!UserManagementModel.UserExist(model.Email))
                 {
-                    FormsAuthentication.SetAuthCookie(model.FullName, false /* createPersistentCookie */);
-                    return RedirectToAction("Index", "Home");
-                }
-                else
-                {
-                    
-                    //ModelState.AddModelError("", ErrorCodeToString(createStatus));
+                    if (UserManagementModel.CreateUser(model))
+                    {
+                        FormsAuthentication.SetAuthCookie(model.FullName, false /* createPersistentCookie */);
+                        return RedirectToAction("Index", "Home");
+                    }
+                    else
+                    {
+                        //ModelState.AddModelError("", ErrorCodeToString(createStatus));
+                    }
                 }
             }
 

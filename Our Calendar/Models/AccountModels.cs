@@ -13,7 +13,8 @@ namespace Our_Calendar.Models
     {
         // Returns a boolean (true = success adding user, false = user not added)
         public static Boolean CreateUser(RegisterModel registrationInfo)
-        {
+        {         
+
             // Encrypt the password, by hashing it. (Salt could be add later)
             byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
             System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
@@ -41,6 +42,31 @@ namespace Our_Calendar.Models
             {
                 return false;
             }            
+        }
+
+        public static Boolean UserExist(string userEmail)
+        {
+            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+            MySqlCommand cmd;
+            connection.Open();
+            try
+            {
+                cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT userID FROM Users WHERE email = @email LIMIT 1";
+                cmd.Parameters.AddWithValue("@email", userEmail);
+                DataTable dt = new DataTable();
+
+                if (dt.Rows.Count <= 0)
+                {
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+
+            return false;
         }
 
         public static Boolean CheckPassword(string username, string password)
