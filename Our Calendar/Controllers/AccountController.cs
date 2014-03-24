@@ -28,9 +28,9 @@ namespace Our_Calendar.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (Membership.ValidateUser(model.UserName, model.Password))
+                if (UserManagementModel.CheckPassword(model))
                 {
-                    FormsAuthentication.SetAuthCookie(model.UserName, model.RememberMe);
+                    FormsAuthentication.SetAuthCookie(model.Email, model.RememberMe);
                     if (Url.IsLocalUrl(returnUrl) && returnUrl.Length > 1 && returnUrl.StartsWith("/")
                         && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
                     {
@@ -77,21 +77,22 @@ namespace Our_Calendar.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (!UserManagementModel.UserExist(model.Email))
+                if (!UserManagementModel.UserExist(model.Email.ToLower()))
                 {
                     if (UserManagementModel.CreateUser(model))
                     {
                         FormsAuthentication.SetAuthCookie(model.FullName, false /* createPersistentCookie */);
-                        return RedirectToAction("Index", "Home");
+                        ViewBag.alertMessage = "Account successfully created!";
+                        return RedirectToAction("Index", "Home");                        
                     }
                     else
                     {
-                        //ModelState.AddModelError("", ErrorCodeToString(createStatus));
+                        ViewBag.alertMessage = "There was an error creating your account.";                        
                     }
                 }
             }
 
-            // If we got this far, something failed, redisplay form
+            ViewBag.alertMessage = "There is already an account associated with that e-mail address.";
             return View(model);
         }
 

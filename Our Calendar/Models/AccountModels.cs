@@ -19,8 +19,8 @@ namespace Our_Calendar.Models
             byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
             System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
             byte[] hashedPassword = hashAlgo.ComputeHash(password);
-            
-            string encryptedPassword = System.Text.Encoding.UTF8.GetString(hashedPassword);
+
+            string encryptedPassword = Convert.ToBase64String(hashedPassword);
 
             // Create database connection
             MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
@@ -52,11 +52,46 @@ namespace Our_Calendar.Models
             try
             {
                 cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT userID FROM Users WHERE email = @email LIMIT 1";
+                cmd.CommandText = "SELECT Count(userID) FROM Users WHERE email = @email";
                 cmd.Parameters.AddWithValue("@email", userEmail);
+                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
+                a.Fill(dt);
 
-                if (dt.Rows.Count <= 0)
+                if (Convert.ToInt32(dt.Rows[0][0]) == 0)
+                {
+                    return false;
+                }
+            }
+            catch (Exception)
+            {
+                return true;
+            }
+            return true;
+        }
+
+        public static Boolean CheckPassword(LogOnModel logOnInfo)
+        {
+            // Encrypt the password, by hashing it. (Salt could be add later)
+            byte[] password = System.Text.Encoding.Unicode.GetBytes(logOnInfo.Password);
+            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
+            byte[] hashedPassword = hashAlgo.ComputeHash(password);
+
+            string encryptedPassword = Convert.ToBase64String(hashedPassword); //System.Text.Encoding.UTF8.GetString(hashedPassword);
+
+            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+            MySqlCommand cmd;
+            connection.Open();
+            try
+            {
+                cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT password FROM Users WHERE email = @email LIMIT 1";
+                cmd.Parameters.AddWithValue("@email", logOnInfo.Email);
+                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                a.Fill(dt);
+
+                if ((string)dt.Rows[0][0] == encryptedPassword)
                 {
                     return true;
                 }
@@ -65,13 +100,6 @@ namespace Our_Calendar.Models
             {
                 return false;
             }
-
-            return false;
-        }
-
-        public static Boolean CheckPassword(string username, string password)
-        {
-
             return false;
         }
     }
@@ -108,8 +136,8 @@ namespace Our_Calendar.Models
     public class LogOnModel
     {
         [Required]
-        [Display(Name = "User name")]
-        public string UserName { get; set; }
+        [Display(Name = "Email Address")]
+        public string Email { get; set; }
 
         [Required]
         [DataType(DataType.Password)]
