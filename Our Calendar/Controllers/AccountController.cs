@@ -84,7 +84,7 @@ namespace Our_Calendar.Controllers
                 }
                 else
                 {
-                    ModelState.AddModelError("", ErrorCodeToString(createStatus));
+                    //ModelState.AddModelError("", ErrorCodeToString(createStatus));
                 }
             }
 
