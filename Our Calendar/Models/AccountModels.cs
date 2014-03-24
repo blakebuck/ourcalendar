@@ -18,6 +18,7 @@ namespace Our_Calendar.Models
             byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
             System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
             byte[] hashedPassword = hashAlgo.ComputeHash(password);
+            string encryptedPassword = Convert.ToString(hashedPassword);
 
             // Create database connection
             MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
@@ -31,7 +32,7 @@ namespace Our_Calendar.Models
                 cmd.CommandText = "INSERT INTO Users(fullName, email, password) VALUES (@fullName, @email, @password)";
                 cmd.Parameters.AddWithValue("@fullName", registrationInfo.FullName);
                 cmd.Parameters.AddWithValue("@email", registrationInfo.Email);
-                cmd.Parameters.AddWithValue("@password", hashedPassword);
+                cmd.Parameters.AddWithValue("@password", encryptedPassword);
                 cmd.ExecuteNonQuery();
                 return true;
             }
