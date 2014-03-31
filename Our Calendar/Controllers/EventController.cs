@@ -23,5 +23,11 @@ namespace Our_Calendar.Controllers
         {
             return View();
         }
+
+        public ActionResult ViewEvent(int eventID)
+        {
+
+            return View();
+        }
     }
 }

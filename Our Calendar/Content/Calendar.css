@@ -1,0 +1,17 @@
+﻿body {
+    margin: 0px;
+    padding: 0px;
+}
+#calendarContainer {
+    margin-left: 1.7%;
+    width: 100%;
+}
+.dayCell {
+    border: solid 1px #ccc;
+    float: left;
+    height: 100%;
+    width: 13.8%;
+}
+@media (min-width: 800px) {
+
+}

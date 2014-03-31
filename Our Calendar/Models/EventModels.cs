@@ -87,9 +87,11 @@ namespace Our_Calendar.Models
         }
 
         // The int parameters should be Unix timestamps, use ConvertToTimestamp to get the time stamps.
-        public static DataTable GetAllEvents(int userID, int startDate, int endDate = 0)
+        public static List<EventModel> GetAllEvents(int userID, int month, int year)
         {
             DataTable dt = new DataTable();
+            List<EventModel> events = new List<EventModel> {};
+            EventModel eventModel = new EventModel();
 
             MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
             MySqlCommand cmd;
@@ -97,27 +99,23 @@ namespace Our_Calendar.Models
             try
             {
                 cmd = connection.CreateCommand();
-                if (endDate == 0)
-                {
-                    cmd.CommandText = "SELECT * FROM Users WHERE userID = @userID AND eventDate > @startDate";
-                    cmd.Parameters.AddWithValue("@userID", userID);
-                    cmd.Parameters.AddWithValue("@startDate", startDate);
-                }
-                else
-                {
-                    cmd.CommandText = "SELECT * FROM Users WHERE userID = @userID AND eventDate > @startDate AND eventDate < @endDate";
-                    cmd.Parameters.AddWithValue("@userID", userID);
-                    cmd.Parameters.AddWithValue("@startDate", startDate);
-                    cmd.Parameters.AddWithValue("@endDate", endDate);
-                }                
+                cmd.CommandText = "SELECT * FROM Events WHERE userID = @userID AND month = @month AND year = @year";
+                cmd.Parameters.AddWithValue("@userID", userID);
+                cmd.Parameters.AddWithValue("@month", month);
+                cmd.Parameters.AddWithValue("@year", year);  
                 MySqlDataAdapter a = new MySqlDataAdapter(cmd);
                 a.Fill(dt);
             }
             catch (Exception)
             {
-                return dt;
+                return events;
             }
-            return dt;
+
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                events.Add(new EventModel(){DayOfMonth = Convert.ToInt32(dt.Rows[i]["day"]), EventName = dt.Rows[i]["eventName"].ToString()});
+            }
+            return events;
         }
 
         public static int[] GetMonthTimeStamps(DateTime date)
@@ -148,7 +146,8 @@ namespace Our_Calendar.Models
 
     public class EventModel
     {
-        
+        public string EventName { get; set; }
+        public int DayOfMonth { get; set; }
     }
 
     public class CreateEventModel

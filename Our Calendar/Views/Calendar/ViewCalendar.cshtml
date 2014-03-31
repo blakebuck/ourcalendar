@@ -1,0 +1,39 @@
+﻿@using Our_Calendar.Models
+@{
+    ViewBag.Title = "ViewCalendar";
+}
+
+        <div id="calendarContainer">
+            @{ int day = 1;
+                int squareCount = 1; }
+            @for (int i = 0; i <= 5; i++) {
+            
+                <div class="weekRow">
+                    @for (int d = 1; d <= 7; d++)
+                    {
+                        if (day <= ViewBag.DaysInMonth)
+                        {
+                            <div class="dayCell">
+                                @if (squareCount > (int) ViewBag.startDay)
+                                {
+                                    <div class="dateNumber">@day</div>
+                                
+                                    foreach (EventModel date in ViewBag.Events)
+                                    {
+                                        if (date.DayOfMonth == day)
+                                        {
+                                            <a href="/events/viewevent/@date">@date.EventName</a>
+                                        }
+                                    }
+                                    day++;
+                                }                     
+                            </div>
+                            
+                            squareCount++;
+                        }                                          
+                    }
+                    
+                </div>
+                       
+            }
+        </div> 
