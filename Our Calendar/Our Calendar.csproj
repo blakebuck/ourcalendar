@@ -48,10 +48,14 @@
       <Private>True</Private>
       <HintPath>..\bin\MySql.Web.dll</HintPath>
     </Reference>
+    <Reference Include="RestSharp">
+      <HintPath>..\packages\RestSharp.104.4.0\lib\net4\RestSharp.dll</HintPath>
+    </Reference>
     <Reference Include="System.Data.Entity" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
@@ -110,6 +114,24 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="MandrillAPI\Core.cs" />
+    <Compile Include="MandrillAPI\MandrillRestRequest.cs" />
+    <Compile Include="MandrillAPI\Messages.cs" />
+    <Compile Include="MandrillAPI\Model\Messages.cs" />
+    <Compile Include="MandrillAPI\Model\RejectsCalls.cs" />
+    <Compile Include="MandrillAPI\Model\Senders.cs" />
+    <Compile Include="MandrillAPI\Model\Tags.cs" />
+    <Compile Include="MandrillAPI\Model\Template.cs" />
+    <Compile Include="MandrillAPI\Model\Urls.cs" />
+    <Compile Include="MandrillAPI\Model\User.cs" />
+    <Compile Include="MandrillAPI\Model\Webhooks.cs" />
+    <Compile Include="MandrillAPI\Rejects.cs" />
+    <Compile Include="MandrillAPI\Sender.cs" />
+    <Compile Include="MandrillAPI\Tags.cs" />
+    <Compile Include="MandrillAPI\Templates.cs" />
+    <Compile Include="MandrillAPI\Urls.cs" />
+    <Compile Include="MandrillAPI\Users.cs" />
+    <Compile Include="MandrillAPI\Webhooks.cs" />
     <Compile Include="Models\AccountModels.cs" />
     <Compile Include="Models\CalendarModels.cs" />
     <Compile Include="Models\EventModels.cs" />
@@ -119,9 +141,14 @@
   <ItemGroup>
     <Content Include="Content\Calendar.css" />
     <Content Include="Global.asax" />
+    <Content Include="MandrillAPI\obj\Debug\DesignTimeResolveAssemblyReferencesInput.cache" />
+    <Content Include="MandrillAPI\obj\Debug\MandrillAPI.csprojResolveAssemblyReference.cache" />
     <None Include="Properties\PublishProfiles\ourcal - FTP.pubxml" />
     <None Include="Properties\PublishProfiles\ourcal - Web Deploy.pubxml" />
     <None Include="Scripts\jquery-1.7.1.intellisense.js" />
+    <Content Include="MandrillAPI\MandrillAPI.csproj" />
+    <Content Include="MandrillAPI\MandrillAPI.csproj.user" />
+    <Content Include="MandrillAPI\obj\Debug\MandrillAPI.csproj.FileListAbsolute.txt" />
     <Content Include="Scripts\jquery-1.7.1.js" />
     <Content Include="Scripts\jquery-1.7.1.min.js" />
     <None Include="Scripts\jquery.validate-vsdoc.js" />
@@ -164,6 +191,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="MandrillAPI\bin\Debug\" />
+    <Folder Include="MandrillAPI\obj\Debug\TempPE\" />
+    <Folder Include="MandrillAPI\Properties\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />

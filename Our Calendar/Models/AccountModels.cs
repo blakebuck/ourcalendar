@@ -14,6 +14,9 @@ namespace Our_Calendar.Models
         // Returns a boolean (true = success adding user, false = user not added)
         public static Boolean CreateUser(RegisterModel registrationInfo)
         {         
+            
+
+
 
             // Encrypt the password, by hashing it. (Salt could be add later)
             byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
