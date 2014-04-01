@@ -23,7 +23,6 @@ namespace Our_Calendar.Controllers
             DateTime firstDayOfMonth = DateTime.Parse(month + "/1/" + year);
 
             ViewBag.startDay = (int) firstDayOfMonth.DayOfWeek;
-
             ViewBag.DaysInMonth = DateTime.DaysInMonth(year, month);
 
             List<EventModel> events = EventManageModel.GetAllEvents(userId, month, year);

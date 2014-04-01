@@ -183,13 +183,13 @@
     <Content Include="Views\Web.config" />
     <Content Include="Views\Calendar\ViewCalendar.cshtml" />
     <Content Include="Views\Shared\_CalendarLayout.cshtml" />
+    <Content Include="Views\Account\Manage.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
     <Folder Include="MandrillAPI\bin\Debug\" />
     <Folder Include="MandrillAPI\obj\Debug\TempPE\" />
     <Folder Include="MandrillAPI\Properties\" />
-    <Folder Include="Views\Account\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
