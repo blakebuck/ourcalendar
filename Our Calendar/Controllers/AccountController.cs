@@ -11,26 +11,30 @@ namespace Our_Calendar.Controllers
 {
     public class AccountController : Controller
     {
-
-        //
-        // GET: /Account/LogOn
-
-        public ActionResult LogOn()
+        public ActionResult Forgot()
         {
             return View();
         }
 
         //
-        // POST: /Account/LogOn
+        // GET: /Account/Login
+
+        public ActionResult Login()
+        {
+            return View();
+        }
+
+        //
+        // POST: /Account/Login
 
         [HttpPost]
-        public ActionResult LogOn(LogOnModel model, string returnUrl)
+        public ActionResult Login(LoginVModel model, string returnUrl)
         {
             if (ModelState.IsValid)
             {
                 if (UserManagementModel.CheckPassword(model))
                 {
-                    FormsAuthentication.SetAuthCookie(model.Email, model.RememberMe);
+                    FormsAuthentication.SetAuthCookie(model.Email, true);
                     if (Url.IsLocalUrl(returnUrl) && returnUrl.Length > 1 && returnUrl.StartsWith("/")
                         && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
                     {
@@ -52,13 +56,18 @@ namespace Our_Calendar.Controllers
         }
 
         //
-        // GET: /Account/LogOff
+        // GET: /Account/Logout
 
-        public ActionResult LogOff()
+        public ActionResult Logout()
         {
             FormsAuthentication.SignOut();
 
             return RedirectToAction("Index", "Home");
+        }
+
+        public ActionResult Manage()
+        {
+            return View();
         }
 
         //
@@ -73,7 +82,7 @@ namespace Our_Calendar.Controllers
         // POST: /Account/Register
 
         [HttpPost]
-        public ActionResult Register(RegisterModel model)
+        public ActionResult Register(RegisterVModel model)
         {
             if (ModelState.IsValid)
             {
@@ -97,20 +106,20 @@ namespace Our_Calendar.Controllers
         }
 
         //
-        // GET: /Account/ChangePassword
+        // GET: /Account/SetPassword
 
         [Authorize]
-        public ActionResult ChangePassword()
+        public ActionResult SetPassword()
         {
             return View();
         }
 
         //
-        // POST: /Account/ChangePassword
+        // POST: /Account/SetPassword
 
         [Authorize]
         [HttpPost]
-        public ActionResult ChangePassword(ChangePasswordModel model)
+        public ActionResult SetPassword(SetPasswordVModel model)
         {
             if (ModelState.IsValid)
             {
@@ -121,33 +130,25 @@ namespace Our_Calendar.Controllers
                 try
                 {
                     MembershipUser currentUser = Membership.GetUser(User.Identity.Name, true /* userIsOnline */);
-                    changePasswordSucceeded = currentUser.ChangePassword(model.OldPassword, model.NewPassword);
+                    //changePasswordSucceeded = currentUser.ChangePassword(model.OldPassword, model.NewPassword);
                 }
                 catch (Exception)
                 {
                     changePasswordSucceeded = false;
                 }
 
-                if (changePasswordSucceeded)
+                /*if (changePasswordSucceeded)
                 {
                     return RedirectToAction("ChangePasswordSuccess");
                 }
                 else
                 {
                     ModelState.AddModelError("", "The current password is incorrect or the new password is invalid.");
-                }
+                }*/
             }
 
             // If we got this far, something failed, redisplay form
             return View(model);
-        }
-
-        //
-        // GET: /Account/ChangePasswordSuccess
-
-        public ActionResult ChangePasswordSuccess()
-        {
-            return View();
         }
 
         #region Status Codes

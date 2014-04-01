@@ -5,13 +5,14 @@ using System.Data;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Web;
+using System.Web.Mvc;
 using MySql.Data.MySqlClient;
 
 namespace Our_Calendar.Models
 {
     public class EventManageModel
     {
-        public static Boolean CreateEvent(CreateEventModel eventInfo)
+        public static Boolean CreateEvent(AddEventVModel eventInfo)
         {
             // Create database connection
             MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
@@ -25,14 +26,14 @@ namespace Our_Calendar.Models
                 // Try to add user to the Users table in the database
                 cmd = connection.CreateCommand();
                 cmd.CommandText = "INSERT INTO CalendarEvents (userID, eventName, eventDate, eventTime, eventLocation, shortDesc, fullDesc, eventImageURL) VALUES (@userID, @eventName, @eventDate, @eventTime, @eventLocation, @shortDesc, @fullDesc, @eventImageURL)";
-                cmd.Parameters.AddWithValue("@userID", eventInfo.userID);
+                cmd.Parameters.AddWithValue("@userID", eventInfo.UserID);
                 cmd.Parameters.AddWithValue("@eventName", eventInfo.EventName);
                 cmd.Parameters.AddWithValue("@eventDate", unixDate);
                 cmd.Parameters.AddWithValue("@eventTime", eventInfo.EventTime);
                 cmd.Parameters.AddWithValue("@eventLocation", eventInfo.EventLocation);
                 cmd.Parameters.AddWithValue("@shortDesc", eventInfo.ShortDesc);
                 cmd.Parameters.AddWithValue("@fullDesc", eventInfo.FullDesc);
-                cmd.Parameters.AddWithValue("@eventImageURL", eventInfo.EventImageURL);
+                cmd.Parameters.AddWithValue("@eventImageURL", eventInfo.EventImage);
                 cmd.ExecuteNonQuery();
                 return true;
             }
@@ -150,22 +151,89 @@ namespace Our_Calendar.Models
         public int DayOfMonth { get; set; }
     }
 
-    public class CreateEventModel
+    public class AddEventVModel
     {
-        [Required]        
-        public int userID { get; set; }
+        [HiddenInput(DisplayValue = false)]
+        public int? UserID { get; set; }
 
         [Required]
+        [Display(Name = "Event Name")]
         public string EventName { get; set; }
 
+        [Required]
+        [Display(Name = "Date of Event")]
         public string EventDate { get; set; }
 
+        [Display(Name = "Time of Event")]
         public string EventTime { get; set; }
 
+        [Display(Name = "Location of Event")]
         public string EventLocation { get; set; }
 
+        [Display(Name = "Brief Description of Event")]
         public string ShortDesc { get; set; }
 
+        [Display(Name = "Description of Event")]
+        public string FullDesc { get; set; }
+
+        [Display(Name = "Upload Event Image")]
+        public HttpPostedFileBase EventImage { get; set; }
+    }
+
+    public class EditEventVModel
+    {
+        [Required]
+        [HiddenInput(DisplayValue = false)]
+        public int? EventID { get; set; }
+
+        [Required]
+        [Display(Name = "Event Name")]
+        public string EventName { get; set; }
+
+        [Required]
+        [Display(Name = "Date of Event")]
+        public string EventDate { get; set; }
+
+        [Display(Name = "Time of Event")]
+        public string EventTime { get; set; }
+
+        [Display(Name = "Location of Event")]
+        public string EventLocation { get; set; }
+
+        [Display(Name = "Brief Description of Event")]
+        public string ShortDesc { get; set; }
+
+        [Display(Name = "Description of Event")]
+        public string FullDesc { get; set; }
+
+        [Display(Name = "Upload Event Image")]
+        public HttpPostedFileBase EventImage { get; set; }
+    }
+
+    public class ViewEventVModel
+    {
+        [Required]
+        [HiddenInput(DisplayValue = false)]
+        public int? EventID { get; set; }
+
+        [Required]
+        [Display(Name = "Event Name")]
+        public string EventName { get; set; }
+
+        [Required]
+        [Display(Name = "Date of Event")]
+        public string EventDate { get; set; }
+
+        [Display(Name = "Time of Event")]
+        public string EventTime { get; set; }
+
+        [Display(Name = "Location of Event")]
+        public string EventLocation { get; set; }
+
+        [Display(Name = "Brief Description of Event")]
+        public string ShortDesc { get; set; }
+
+        [Display(Name = "Description of Event")]
         public string FullDesc { get; set; }
 
         public string EventImageURL { get; set; }

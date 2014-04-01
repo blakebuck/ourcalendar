@@ -8,12 +8,6 @@ namespace Our_Calendar.Controllers
 {
     public class EventController : Controller
     {
-
-        public ActionResult Index()
-        {
-            return View();
-        }
-
         public ActionResult Edit()
         {
             return View();
@@ -24,9 +18,14 @@ namespace Our_Calendar.Controllers
             return View();
         }
 
-        public ActionResult ViewEvent(int eventID)
+        public ActionResult View(int eventID)
         {
 
+            return View();
+        }
+
+        public ActionResult Delete()
+        {
             return View();
         }
     }

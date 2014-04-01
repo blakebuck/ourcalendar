@@ -176,11 +176,6 @@
     <Content Include="Scripts\MicrosoftMvcValidation.js" />
     <Content Include="Scripts\MicrosoftMvcValidation.debug.js" />
     <Content Include="Views\_ViewStart.cshtml" />
-    <Content Include="Views\Account\ChangePassword.cshtml" />
-    <Content Include="Views\Account\ChangePasswordSuccess.cshtml" />
-    <Content Include="Views\Account\LogOn.cshtml" />
-    <Content Include="Views\Account\Register.cshtml" />
-    <Content Include="Views\Home\About.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_LogOnPartial.cshtml" />
@@ -194,6 +189,7 @@
     <Folder Include="MandrillAPI\bin\Debug\" />
     <Folder Include="MandrillAPI\obj\Debug\TempPE\" />
     <Folder Include="MandrillAPI\Properties\" />
+    <Folder Include="Views\Account\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />

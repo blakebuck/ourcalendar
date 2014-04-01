@@ -12,18 +12,34 @@ namespace Our_Calendar.Models
     public class UserManagementModel
     {
         // Returns a boolean (true = success adding user, false = user not added)
-        public static Boolean CreateUser(RegisterModel registrationInfo)
-        {         
-            
+        public static Boolean CreateUser(RegisterVModel registrationInfo)
+        {
+            /*string APIKey = "MSZero_69BqI7L6N2p6jow";
 
+            MandrillApi.MandrillApi _mapi = new MandrillApi.MandrillApi(APIKey, "json");
 
+            ViewBag.Mandrill = _mapi.Ping();
+
+            object message = new
+            {
+                html = "test html",
+                text = "text",
+                subject = "test subject",
+                from_email = "blake@blakebuckit.com",
+                from_name = "Our Calendar",
+                to = new List<Recipient>{new Recipient {email = "blake@bdev.dreamhosters.com", name = "Blake"}}
+            };
+
+            List<MandrillApi.Model.RecipientReturn> returnValue = _mapi.send(message);
+
+            ViewBag.MandrillStatus = returnValue.Count.ToString(CultureInfo.InvariantCulture);*/
 
             // Encrypt the password, by hashing it. (Salt could be add later)
-            byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
+            /*byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
             System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
             byte[] hashedPassword = hashAlgo.ComputeHash(password);
 
-            string encryptedPassword = Convert.ToBase64String(hashedPassword);
+            string encryptedPassword = Convert.ToBase64String(hashedPassword);*/
 
             // Create database connection
             MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
@@ -37,7 +53,7 @@ namespace Our_Calendar.Models
                 cmd.CommandText = "INSERT INTO Users(fullName, email, password) VALUES (@fullName, @email, @password)";
                 cmd.Parameters.AddWithValue("@fullName", registrationInfo.FullName);
                 cmd.Parameters.AddWithValue("@email", registrationInfo.Email);
-                cmd.Parameters.AddWithValue("@password", encryptedPassword);
+                //cmd.Parameters.AddWithValue("@password", encryptedPassword);
                 cmd.ExecuteNonQuery();
                 return true;
             }
@@ -73,7 +89,7 @@ namespace Our_Calendar.Models
             return true;
         }
 
-        public static Boolean CheckPassword(LogOnModel logOnInfo)
+        public static Boolean CheckPassword(LoginVModel logOnInfo)
         {
             // Encrypt the password, by hashing it. (Salt could be add later)
             byte[] password = System.Text.Encoding.Unicode.GetBytes(logOnInfo.Password);
@@ -117,26 +133,14 @@ namespace Our_Calendar.Models
 
     }
 
-    public class ChangePasswordModel
+    public class ForgotPasswordVModel
     {
         [Required]
-        [DataType(DataType.Password)]
-        [Display(Name = "Current password")]
-        public string OldPassword { get; set; }
-
-        [Required]
-        [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]
-        [DataType(DataType.Password)]
-        [Display(Name = "New password")]
-        public string NewPassword { get; set; }
-
-        [DataType(DataType.Password)]
-        [Display(Name = "Confirm new password")]
-        [System.Web.Mvc.Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
-        public string ConfirmPassword { get; set; }
+        [Display(Name = "Email Address")]
+        public string Email { get; set; }
     }
 
-    public class LogOnModel
+    public class LoginVModel
     {
         [Required]
         [Display(Name = "Email Address")]
@@ -145,13 +149,22 @@ namespace Our_Calendar.Models
         [Required]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
-        public string Password { get; set; }
-
-        [Display(Name = "Remember me?")]
-        public bool RememberMe { get; set; }
+        public string Password { get; set; }        
     }
 
-    public class RegisterModel
+    public class ManageAcctVModel
+    {
+        [Required]
+        [Display(Name = "Full Name")]
+        public string FullName { get; set; }
+
+        [Required]
+        [DataType(DataType.EmailAddress)]
+        [Display(Name = "Email Address")]
+        public string Email { get; set; }
+    }
+
+    public class RegisterVModel
     {
         [Required]
         [Display(Name = "Full Name")]
@@ -161,16 +174,19 @@ namespace Our_Calendar.Models
         [DataType(DataType.EmailAddress)]
         [Display(Name = "Email address")]
         public string Email { get; set; }
+    }
 
+    public class SetPasswordVModel
+    {
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]
-        [Display(Name = "Password")]
-        public string Password { get; set; }
+        [Display(Name = "New password")]
+        public string NewPassword { get; set; }
 
         [DataType(DataType.Password)]
-        [Display(Name = "Confirm password")]
-        [System.Web.Mvc.Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        [Display(Name = "Confirm new password")]
+        [System.Web.Mvc.Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; }
     }
 }

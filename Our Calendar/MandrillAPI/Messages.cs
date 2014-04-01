@@ -21,7 +21,7 @@ namespace MandrillApi
             var request = new MandrillRestRequest
             {
                 Method = RestSharp.Method.POST,
-                Resource = string.Format("{0}/search.json", messages)
+                Resource = string.Format("{0}/send.json", messages)
             };
             request.AddBody(new { key = _ApiKey, message = T });
 

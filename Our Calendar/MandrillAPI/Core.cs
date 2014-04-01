@@ -10,7 +10,7 @@ namespace MandrillApi
     {
         private RestClient _client;
         private string _ApiKey;
-        private const string _MandrillUrl = "http://mandrillapp.com/api/1.0/";
+        private const string _MandrillUrl = "https://mandrillapp.com/api/1.0/";
         private string _messageType;
 
         public MandrillApi(string ApiKey, string MessageType)

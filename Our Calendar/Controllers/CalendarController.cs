@@ -10,18 +10,12 @@ namespace Our_Calendar.Controllers
 {
     public class CalendarController : Controller
     {
-
-        public ActionResult Index()
-        {
-            return View();
-        }
-
         public ActionResult Manage()
         {
             return View();
         }
 
-        public ActionResult ViewCalendar(int userId, int month = 0, int year = 0)
+        public ActionResult View(int userId, int month = 0, int year = 0)
         {
             if (month < 1 || month > 12) month = DateTime.Now.Month;
             if (year < 1 || year > 9999) year = DateTime.Now.Year;
