@@ -14,7 +14,7 @@ namespace Our_Calendar.Models
         // Returns a boolean (true = success adding user, false = user not added)
         public static Boolean CreateUser(RegisterVModel registrationInfo)
         {
-            /*string APIKey = "MSZero_69BqI7L6N2p6jow";
+            /*string APIKey = APPSETTING_MANDRILL_API_KEY;
 
             MandrillApi.MandrillApi _mapi = new MandrillApi.MandrillApi(APIKey, "json");
 
