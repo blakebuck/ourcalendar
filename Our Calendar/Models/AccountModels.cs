@@ -5,6 +5,7 @@ using System.Data;
 using System.Globalization;
 using System.Web.Mvc;
 using System.Web.Security;
+using MandrillApi.Model;
 using MySql.Data.MySqlClient;
 
 namespace Our_Calendar.Models
@@ -14,80 +15,103 @@ namespace Our_Calendar.Models
         // Returns a boolean (true = success adding user, false = user not added)
         public static Boolean CreateUser(RegisterVModel registrationInfo)
         {
-            /*string APIKey = APPSETTING_MANDRILL_API_KEY;
-
-            MandrillApi.MandrillApi _mapi = new MandrillApi.MandrillApi(APIKey, "json");
-
-            ViewBag.Mandrill = _mapi.Ping();
-
-            object message = new
-            {
-                html = "test html",
-                text = "text",
-                subject = "test subject",
-                from_email = "blake@blakebuckit.com",
-                from_name = "Our Calendar",
-                to = new List<Recipient>{new Recipient {email = "blake@bdev.dreamhosters.com", name = "Blake"}}
-            };
-
-            List<MandrillApi.Model.RecipientReturn> returnValue = _mapi.send(message);
-
-            ViewBag.MandrillStatus = returnValue.Count.ToString(CultureInfo.InvariantCulture);*/
-
-            // Encrypt the password, by hashing it. (Salt could be add later)
-            /*byte[] password = System.Text.Encoding.Unicode.GetBytes(registrationInfo.Password);
+            // Create a unique code to be used for setting their password after
+            // they confirm their e-mail address.
+            Random random = new Random();
             System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
-            byte[] hashedPassword = hashAlgo.ComputeHash(password);
+            string passcode = Convert.ToBase64String(hashAlgo.ComputeHash(System.Text.Encoding.Unicode.GetBytes(random.Next().ToString(CultureInfo.InvariantCulture))));
 
-            string encryptedPassword = Convert.ToBase64String(hashedPassword);*/
-
-            // Create database connection
+            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
+            // you can replace it with your connection string if deploying to a different server.
             MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
-
+            
             try
             {
+                // Open connection to Database
+                connection.Open();
+
                 // Try to add user to the Users table in the database
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "INSERT INTO Users(fullName, email, password) VALUES (@fullName, @email, @password)";
+                MySqlCommand cmd = connection.CreateCommand();
+                cmd.CommandText = "INSERT INTO Users(fullName, email, passcode) VALUES (@fullName, @email, @passcode)";
                 cmd.Parameters.AddWithValue("@fullName", registrationInfo.FullName);
-                cmd.Parameters.AddWithValue("@email", registrationInfo.Email);
-                //cmd.Parameters.AddWithValue("@password", encryptedPassword);
+                cmd.Parameters.AddWithValue("@email", registrationInfo.Email.ToLower());
+                cmd.Parameters.AddWithValue("@passcode", passcode);
                 cmd.ExecuteNonQuery();
-                return true;
+
+                // Close connection
+                connection.Close();
             }
             catch (Exception)
             {
+                // Something failed while trying to add user
                 return false;
-            }            
+            }
+
+            // APPSETTING_MANDRILL_API_KEY is from Azure server config, replace with your API key if you deploy to another server
+            string APIKey = Environment.GetEnvironmentVariable("APPSETTING_MANDRILL_API_KEY");
+
+            // Create a MandrillApi instance.
+            MandrillApi.MandrillApi _mapi = new MandrillApi.MandrillApi(APIKey, "json");
+
+            // Create e-mail message.
+            object message = new
+            {
+                html = "Thank you for registering for an Our Calander account. Please verify your e-mail address by going to http://ourcal.azurewebsites.net/account/setpassword/" + passcode,
+                text = "Thank you for registering for an Our Calander account. Please verify your e-mail address by going to http://ourcal.azurewebsites.net/account/setpassword/" + passcode,
+                subject = "Account Setup",
+                from_email = "OurCalendar@blakebuckit.com",
+                from_name = "Our Calendar App",
+                to = new List<Recipient>{new Recipient {email = registrationInfo.Email, name = registrationInfo.FullName}}
+            };
+
+            // Attempt to send e-mail
+            List<MandrillApi.Model.RecipientReturn> returnValue = _mapi.send(message);
+
+            // Returns false if confirmation e-mail was not sent
+            return returnValue[0].status == "sent";
         }
 
-        public static Boolean UserExist(string userEmail)
+        // Returns a integer representing the UserID of the user 
+        // or 0 indicating the user doesn't exist.
+        public static int UserExist(string userEmail)
         {
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
+            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
+            // you can replace it with your connection string if deploying to a different server.
+            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));            
+            
             try
             {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT Count(userID) FROM Users WHERE email = @email";
-                cmd.Parameters.AddWithValue("@email", userEmail);
+                // Open connection to Database
+                connection.Open();
+
+                // Queries database for the UserID of a user who has the given e-mail address                
+                MySqlCommand cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT userID FROM Users WHERE email = @email LIMIT 1";
+                cmd.Parameters.AddWithValue("@email", userEmail.ToLower());
+                
+                // Puts query results into Datatable
                 MySqlDataAdapter a = new MySqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
                 a.Fill(dt);
-
-                if (Convert.ToInt32(dt.Rows[0][0]) == 0)
+                               
+                // If count equals 0 then return false ("User doesn't exist")
+                if (dt.Rows.Count <= 0)
                 {
-                    return false;
+                    return 0;
+                }
+                else
+                {
+                    return Convert.ToInt32(dt.Rows[0]["userID"]);
                 }
             }
             catch (Exception)
             {
-                return true;
+                // On error return 0, that the user does exist 
+                // (this will prevent duplicate account creation in the case of an error)
+                return 0;
             }
-            return true;
         }
+
 
         public static Boolean CheckPassword(LoginVModel logOnInfo)
         {
@@ -105,7 +129,7 @@ namespace Our_Calendar.Models
             {
                 cmd = connection.CreateCommand();
                 cmd.CommandText = "SELECT password FROM Users WHERE email = @email LIMIT 1";
-                cmd.Parameters.AddWithValue("@email", logOnInfo.Email);
+                cmd.Parameters.AddWithValue("@email", logOnInfo.Email.ToLower());
                 MySqlDataAdapter a = new MySqlDataAdapter(cmd);
                 DataTable dt = new DataTable();
                 a.Fill(dt);
@@ -121,17 +145,16 @@ namespace Our_Calendar.Models
             }
             return false;
         }
+
+        public static Boolean SetPassword(string password, string passcode = null, int userID = 0)
+        {
+            if (passcode == null && userID == 0) return false;
+
+
+            return true;
+        }
     }
 
-    public class UserModel
-    {
-        [Required]
-        public int UserID { get; set; }
-        public string FullName { get; set; }
-        public string Email { get; set; }
-        public string Password { get; set; }
-
-    }
 
     public class ForgotPasswordVModel
     {
@@ -178,6 +201,9 @@ namespace Our_Calendar.Models
 
     public class SetPasswordVModel
     {
+        [HiddenInput]
+        public string Passcode { get; set; }
+
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]

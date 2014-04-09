@@ -11,12 +11,23 @@ namespace Our_Calendar.Controllers
 {
     public class AccountController : Controller
     {
+        // Forgot Password 
+        // GET: /Account/Forgot
+
         public ActionResult Forgot()
         {
             return View();
         }
 
-        //
+        // Forgot Password (Handler)
+        // POST: /Account/Forgot
+
+        public ActionResult Forgot(ForgotPasswordVModel model)
+        {
+            return View();
+        }
+
+        // User Login 
         // GET: /Account/Login
 
         public ActionResult Login()
@@ -24,29 +35,42 @@ namespace Our_Calendar.Controllers
             return View();
         }
 
-        //
+        // User Login (Handler)
         // POST: /Account/Login
 
         [HttpPost]
+        // model holds all the user login information, 
+        // returnUrl is the URL they were trying to access but were redirect to login
         public ActionResult Login(LoginVModel model, string returnUrl)
         {
+            // Checks to make sure there were no
+            // errors on on the login page (i.e. all fields were filled out)
             if (ModelState.IsValid)
             {
+                // Checks to see if the password given is valid
                 if (UserManagementModel.CheckPassword(model))
                 {
+                    // Sets a logged in cookie
                     FormsAuthentication.SetAuthCookie(model.Email, true);
-                    if (Url.IsLocalUrl(returnUrl) && returnUrl.Length > 1 && returnUrl.StartsWith("/")
-                        && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
+
+                    // Saves Email Address in Session Variable
+                    Session["UserID"] = UserManagementModel.UserExist(model.Email);
+                    
+                    // Checks to see if the returnUrl is valid 
+                    if (Url.IsLocalUrl(returnUrl) && returnUrl.Length > 1 && returnUrl.StartsWith("/") && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
                     {
+                        // Redirects to returnUrl
                         return Redirect(returnUrl);
                     }
                     else
                     {
-                        return RedirectToAction("Index", "Home");
+                        // Redirects to Manage in the Calendar controller
+                        return RedirectToAction("Manage", "Calendar");
                     }
                 }
                 else
                 {
+                    // Send the user an error message
                     ModelState.AddModelError("", "The user name or password provided is incorrect.");
                 }
             }
@@ -55,22 +79,36 @@ namespace Our_Calendar.Controllers
             return View(model);
         }
 
-        //
+        // User Logout
         // GET: /Account/Logout
 
         public ActionResult Logout()
         {
+            // Destroys Logged In Cookie/Session
             FormsAuthentication.SignOut();
 
+            // Redirects the user to the homepage.
             return RedirectToAction("Index", "Home");
         }
+
+        // User Account Management
+        // GET: /Account/Manage
 
         public ActionResult Manage()
         {
             return View();
         }
 
-        //
+        // User Account Management (Handler)
+        // POST: /Account/Manage
+        [HttpPost]
+        public ActionResult Manage(ManageAcctVModel model)
+        {
+            return View();
+        }
+
+
+        // User Account Registration
         // GET: /Account/Register
 
         public ActionResult Register()
@@ -78,69 +116,78 @@ namespace Our_Calendar.Controllers
             return View();
         }
 
-        //
+        // User Account Registration (Handler)
         // POST: /Account/Register
 
         [HttpPost]
         public ActionResult Register(RegisterVModel model)
         {
+            // Checks to make sure there were no
+            // errors on on the login page (i.e. all fields were filled out)
             if (ModelState.IsValid)
             {
-                if (!UserManagementModel.UserExist(model.Email.ToLower()))
+                // Check to see if an account already exists for the given e-mail address
+                if (UserManagementModel.UserExist(model.Email.ToLower()) > 0)
                 {
+                    // Try to create account
                     if (UserManagementModel.CreateUser(model))
                     {
-                        FormsAuthentication.SetAuthCookie(model.FullName, false /* createPersistentCookie */);
-                        ViewBag.alertMessage = "Account successfully created!";
+                        // Message for user.
+                        ViewBag.alertMessage = "Account successfully created, check your e-mail for account confirmation e-mail!";
+
+                        // Redirect user to the home page.
                         return RedirectToAction("Index", "Home");                        
                     }
                     else
                     {
+                        // Account creation failed, pass message to user.
                         ViewBag.alertMessage = "There was an error creating your account.";                        
                     }
                 }
+                else
+                {
+                    // Message for user.
+                    ViewBag.alertMessage = "There is already an account associated with that e-mail address.";
+                }
             }
-
-            ViewBag.alertMessage = "There is already an account associated with that e-mail address.";
+            // If they get here, account creation failed.
             return View(model);
         }
 
-        //
+        // Set/Change Password
         // GET: /Account/SetPassword
 
         [Authorize]
-        public ActionResult SetPassword()
+        public ActionResult SetPassword(string passcode)
         {
+            // Sets ViewBag.passcode equal to the value of passcode 
+            // if it isn't null otherwise equal to empty string.
+            ViewBag.passcode = passcode ?? "";
             return View();
         }
 
-        //
+        // Set/Change Password (Handler)
         // POST: /Account/SetPassword
 
-        [Authorize]
         [HttpPost]
         public ActionResult SetPassword(SetPasswordVModel model)
         {
+            // Make sure that there were not errors on the form
             if (ModelState.IsValid)
             {
-
-                // ChangePassword will throw an exception rather
-                // than return false in certain failure scenarios.
-                bool changePasswordSucceeded;
-                try
+                // Check to see if they typed in their password correctly
+                if (model.NewPassword == model.ConfirmPassword)
                 {
-                    MembershipUser currentUser = Membership.GetUser(User.Identity.Name, true /* userIsOnline */);
-                    //changePasswordSucceeded = currentUser.ChangePassword(model.OldPassword, model.NewPassword);
+                    // Try to set password
+                    if (UserManagementModel.SetPassword(model.NewPassword, model.Passcode, Convert.ToInt32(Session["UserID"])))
+                    {
+                        // Success setting password.
+                        // Redirect user to the manage calendar page.
+                        return RedirectToAction("Manage", "Calendar");     
+                    }
                 }
-                catch (Exception)
-                {
-                    changePasswordSucceeded = false;
-                }
-
-                /*if (changePasswordSucceeded)
-                {
-                    return RedirectToAction("ChangePasswordSuccess");
-                }
+                               
+                /*
                 else
                 {
                     ModelState.AddModelError("", "The current password is incorrect or the new password is invalid.");
@@ -150,45 +197,5 @@ namespace Our_Calendar.Controllers
             // If we got this far, something failed, redisplay form
             return View(model);
         }
-
-        #region Status Codes
-        private static string ErrorCodeToString(MembershipCreateStatus createStatus)
-        {
-            // See http://go.microsoft.com/fwlink/?LinkID=177550 for
-            // a full list of status codes.
-            switch (createStatus)
-            {
-                case MembershipCreateStatus.DuplicateUserName:
-                    return "User name already exists. Please enter a different user name.";
-
-                case MembershipCreateStatus.DuplicateEmail:
-                    return "A user name for that e-mail address already exists. Please enter a different e-mail address.";
-
-                case MembershipCreateStatus.InvalidPassword:
-                    return "The password provided is invalid. Please enter a valid password value.";
-
-                case MembershipCreateStatus.InvalidEmail:
-                    return "The e-mail address provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.InvalidAnswer:
-                    return "The password retrieval answer provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.InvalidQuestion:
-                    return "The password retrieval question provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.InvalidUserName:
-                    return "The user name provided is invalid. Please check the value and try again.";
-
-                case MembershipCreateStatus.ProviderError:
-                    return "The authentication provider returned an error. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
-
-                case MembershipCreateStatus.UserRejected:
-                    return "The user creation request has been canceled. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
-
-                default:
-                    return "An unknown error occurred. Please verify your entry and try again. If the problem persists, please contact your system administrator.";
-            }
-        }
-        #endregion
     }
 }
