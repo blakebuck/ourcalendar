@@ -24,6 +24,14 @@ namespace Our_Calendar.Controllers
 
         public ActionResult Forgot(ForgotPasswordVModel model)
         {
+            if (ModelState.IsValid)
+            {
+                if (UserManagementModel.SendPasswordReset(model))
+                {
+                    // Redirects to the home page.
+                    return RedirectToAction("Index", "Home");
+                }
+            }
             return View();
         }
 
@@ -185,13 +193,15 @@ namespace Our_Calendar.Controllers
                         // Redirect user to the manage calendar page.
                         return RedirectToAction("Manage", "Calendar");     
                     }
+                    else
+                    {
+                        ModelState.AddModelError("", "A problem occured while trying to set your password.");
+                    }
                 }
-                               
-                /*
                 else
                 {
-                    ModelState.AddModelError("", "The current password is incorrect or the new password is invalid.");
-                }*/
+                    ModelState.AddModelError("", "The typed passwords do not match.");
+                }
             }
 
             // If we got this far, something failed, redisplay form

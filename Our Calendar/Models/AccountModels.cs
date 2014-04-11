@@ -12,6 +12,39 @@ namespace Our_Calendar.Models
 {
     public class UserManagementModel
     {
+        public static Boolean CheckPassword(LoginVModel logOnInfo)
+        {
+            // Encrypt the password, by hashing it. (Salt could be add later)
+            byte[] password = System.Text.Encoding.Unicode.GetBytes(logOnInfo.Password);
+            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
+            byte[] hashedPassword = hashAlgo.ComputeHash(password);
+
+            string encryptedPassword = Convert.ToBase64String(hashedPassword); //System.Text.Encoding.UTF8.GetString(hashedPassword);
+
+            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+            MySqlCommand cmd;
+            connection.Open();
+            try
+            {
+                cmd = connection.CreateCommand();
+                cmd.CommandText = "SELECT password FROM Users WHERE email = @email LIMIT 1";
+                cmd.Parameters.AddWithValue("@email", logOnInfo.Email.ToLower());
+                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
+                DataTable dt = new DataTable();
+                a.Fill(dt);
+
+                if ((string)dt.Rows[0][0] == encryptedPassword)
+                {
+                    return true;
+                }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+            return false;
+        } 
+
         // Returns a boolean (true = success adding user, false = user not added)
         public static Boolean CreateUser(RegisterVModel registrationInfo)
         {
@@ -71,6 +104,117 @@ namespace Our_Calendar.Models
             return returnValue[0].status == "sent";
         }
 
+        public static Boolean SendPasswordReset(ForgotPasswordVModel AccountInfo)
+        {
+            // Create a unique code to be used for setting their password            
+            Random random = new Random();
+            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
+            string passcode = Convert.ToBase64String(hashAlgo.ComputeHash(System.Text.Encoding.Unicode.GetBytes(random.Next().ToString(CultureInfo.InvariantCulture))));
+
+            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
+            // you can replace it with your connection string if deploying to a different server.
+            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+
+            try
+            {
+                // Open connection to Database
+                connection.Open();
+
+                // Set the passcode in the database
+                MySqlCommand cmd = connection.CreateCommand();
+                cmd.CommandText = "UPDATE Users SET passcode = @passcode WHERE email = @email";
+                cmd.Parameters.AddWithValue("@passcode", passcode);
+                cmd.Parameters.AddWithValue("@email", AccountInfo.Email.ToLower());
+                cmd.ExecuteNonQuery();
+
+                // Close connection
+                connection.Close();
+            }
+            catch (Exception)
+            {
+                // Something failed while trying to add passcode
+                return false;
+            }
+
+            // APPSETTING_MANDRILL_API_KEY is from Azure server config, replace with your API key if you deploy to another server
+            string APIKey = Environment.GetEnvironmentVariable("APPSETTING_MANDRILL_API_KEY");
+
+            // Create a MandrillApi instance.
+            MandrillApi.MandrillApi _mapi = new MandrillApi.MandrillApi(APIKey, "json");
+
+            // Create e-mail message.
+            object message = new
+            {
+                html = "Someone has requested a password reset on your Our Calendar account. If this was you please follow this link: http://ourcal.azurewebsites.net/account/setpassword/" + passcode + " otherwise please delete this e-mail.",
+                text = "Someone has requested a password reset on your Our Calendar account. If this was you please follow this link: http://ourcal.azurewebsites.net/account/setpassword/" + passcode + " otherwise please delete this e-mail.",
+                subject = "Our Calendar App - Password Reset",
+                from_email = "OurCalendar@blakebuckit.com",
+                from_name = "Our Calendar App",
+                to = new List<Recipient> { new Recipient { email = AccountInfo.Email } }
+            };
+
+            // Attempt to send e-mail
+            List<MandrillApi.Model.RecipientReturn> returnValue = _mapi.send(message);
+
+            // Returns false if confirmation e-mail was not sent
+            return returnValue[0].status == "sent";
+        }
+
+        public static Boolean SetPassword(string password, string passcode = null, int userID = 0)
+        {
+            // Make sure that either the passcode or UserID is set.
+            if (passcode == null && userID == 0) return false;
+
+            // Hash the selected password to protect it in the database
+            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
+            string encryptedPassword = Convert.ToBase64String(hashAlgo.ComputeHash(System.Text.Encoding.Unicode.GetBytes(password)));
+
+            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
+            // you can replace it with your connection string if deploying to a different server.
+            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+
+            try
+            {
+                // Open connection to Database
+                connection.Open();
+
+                // Try to save the user's password in the database
+                MySqlCommand cmd = connection.CreateCommand();
+
+                // If a passcode was given use it
+                if (passcode != null)
+                {
+                    cmd.CommandText = "UPDATE Users SET passcode = '', password = @password WHERE passcode = @passcode";
+                    cmd.Parameters.AddWithValue("@passcode", passcode);
+                }
+                else
+                {
+                    // If no passcode was given try userID
+                    cmd.CommandText = "UPDATE Users SET passcode = '', password = @password WHERE UserID = @userID";
+                    cmd.Parameters.AddWithValue("@userID", userID);
+                }
+                // Bind the encrypted password to the password parameter in the query.
+                cmd.Parameters.AddWithValue("@password", encryptedPassword);
+                // Execute the query.                
+                if (cmd.ExecuteNonQuery() <= 0)
+                {
+                    // If the number of rows affected by 
+                    // the query is 0 or less then return false
+                    return false;
+                }
+
+                // Close connection
+                connection.Close();
+            }
+            catch (Exception)
+            {
+                // Something failed while trying to set the password
+                return false;
+            }
+            // Returns true meaning the password was successfully set.
+            return true;
+        }
+
         // Returns a integer representing the UserID of the user 
         // or 0 indicating the user doesn't exist.
         public static int UserExist(string userEmail)
@@ -113,46 +257,9 @@ namespace Our_Calendar.Models
         }
 
 
-        public static Boolean CheckPassword(LoginVModel logOnInfo)
-        {
-            // Encrypt the password, by hashing it. (Salt could be add later)
-            byte[] password = System.Text.Encoding.Unicode.GetBytes(logOnInfo.Password);
-            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
-            byte[] hashedPassword = hashAlgo.ComputeHash(password);
+        
 
-            string encryptedPassword = Convert.ToBase64String(hashedPassword); //System.Text.Encoding.UTF8.GetString(hashedPassword);
-
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
-            try
-            {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT password FROM Users WHERE email = @email LIMIT 1";
-                cmd.Parameters.AddWithValue("@email", logOnInfo.Email.ToLower());
-                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                a.Fill(dt);
-
-                if ((string)dt.Rows[0][0] == encryptedPassword)
-                {
-                    return true;
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-            return false;
-        }
-
-        public static Boolean SetPassword(string password, string passcode = null, int userID = 0)
-        {
-            if (passcode == null && userID == 0) return false;
-
-
-            return true;
-        }
+        
     }
 
 
