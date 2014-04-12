@@ -24,8 +24,10 @@ namespace Our_Calendar.Controllers
 
         public ActionResult Forgot(ForgotPasswordVModel model)
         {
+            // Check for errors on the form
             if (ModelState.IsValid)
             {
+                // Send password reset e-mail
                 if (UserManagementModel.SendPasswordReset(model))
                 {
                     // Redirects to the home page.
@@ -94,6 +96,8 @@ namespace Our_Calendar.Controllers
         {
             // Destroys Logged In Cookie/Session
             FormsAuthentication.SignOut();
+            // Clear session variables
+            Session.Clear();
 
             // Redirects the user to the homepage.
             return RedirectToAction("Index", "Home");
@@ -104,7 +108,9 @@ namespace Our_Calendar.Controllers
 
         public ActionResult Manage()
         {
-            return View();
+            // Get user info from database
+            ManageAcctVModel model = UserManagementModel.ManageAcct(Session["UserID"].ToString());
+            return View(model);
         }
 
         // User Account Management (Handler)

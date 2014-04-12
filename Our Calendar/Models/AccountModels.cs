@@ -3,45 +3,37 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Globalization;
+using System.Security.Policy;
 using System.Web.Mvc;
 using System.Web.Security;
+using System.Web.Services.Description;
 using MandrillApi.Model;
 using MySql.Data.MySqlClient;
+
 
 namespace Our_Calendar.Models
 {
     public class UserManagementModel
-    {
+    {        
+        // Returns true if the password given matches the on in the database, else false.
         public static Boolean CheckPassword(LoginVModel logOnInfo)
         {
-            // Encrypt the password, by hashing it. (Salt could be add later)
-            byte[] password = System.Text.Encoding.Unicode.GetBytes(logOnInfo.Password);
-            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
-            byte[] hashedPassword = hashAlgo.ComputeHash(password);
+            // Encrypt the password, by hashing it. (Salt could be added later)
+            string encryptedPassword = HashIT(logOnInfo.Password);
 
-            string encryptedPassword = Convert.ToBase64String(hashedPassword); //System.Text.Encoding.UTF8.GetString(hashedPassword);
+            // Prepare parameters for query and try query.
+            Dictionary<string, string> conditions = new Dictionary<string, string>() { { "email", logOnInfo.Email } };
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT password FROM Users WHERE email = @email LIMIT 1", conditions);
 
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
-            try
+            // If query returns results and the password give matches 
+            // the one in the database then return true.
+            if (resultsTable.Rows.Count > 0)
             {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT password FROM Users WHERE email = @email LIMIT 1";
-                cmd.Parameters.AddWithValue("@email", logOnInfo.Email.ToLower());
-                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                a.Fill(dt);
-
-                if ((string)dt.Rows[0][0] == encryptedPassword)
+                if ((string)resultsTable.Rows[0]["password"] == encryptedPassword)
                 {
                     return true;
                 }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
+            }            
             return false;
         } 
 
@@ -51,35 +43,78 @@ namespace Our_Calendar.Models
             // Create a unique code to be used for setting their password after
             // they confirm their e-mail address.
             Random random = new Random();
+            string passcode = HashIT(random.Next().ToString(CultureInfo.InvariantCulture));            
+
+            // Prepare values for INSERT into database
+            Dictionary<string, string> values = new Dictionary<string, string>()
+            {
+                {"fullName", registrationInfo.FullName},
+                {"email", registrationInfo.Email.ToLower()},
+                {"passcode", passcode}
+            };
+
+            // Try to insert new user into the database
+            if (DatabaseHelper.DatabaseHelper.DbInsert("Users", values))
+            {
+                // Success adding user to database, create e-mail message
+                string message = "Thank you for registering for an Our Calander account. Please verify your e-mail address by going to http://ourcal.azurewebsites.net/account/setpassword/" + passcode;
+
+                // Try to send account setup e-mail
+                if (SendEmail(message, "Our Calendar App - Account Setup", registrationInfo.Email, registrationInfo.FullName))
+                {
+                    // Success, return true.
+                    return true;
+                }
+            }
+            // Something failed, return false.
+            return false;
+        }
+
+        // Creates SHA256 hashes of the given string.
+        public static string HashIT(string what2Hash)
+        {            
+            // Next 3 lines create hash.
+            byte[] raw = System.Text.Encoding.Unicode.GetBytes(what2Hash);
             System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
-            string passcode = Convert.ToBase64String(hashAlgo.ComputeHash(System.Text.Encoding.Unicode.GetBytes(random.Next().ToString(CultureInfo.InvariantCulture))));
+            byte[] hashed = hashAlgo.ComputeHash(raw);
 
-            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
-            // you can replace it with your connection string if deploying to a different server.
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+            // Convert byte hash to string
+            string hashedString = Convert.ToBase64String(hashed); 
             
-            try
+            return hashedString;
+        }
+
+        // Returns user info from database used on the manage user account page.
+        public static ManageAcctVModel ManageAcct(string userID)
+        {
+            Dictionary<string, string> conditions = new Dictionary<string, string>() { { "userID", userID } };
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT fullName, email FROM Users WHERE userID = @userID LIMIT 1", conditions);
+
+            ManageAcctVModel model = new ManageAcctVModel();
+
+            if (resultsTable.Rows.Count > 0)
             {
-                // Open connection to Database
-                connection.Open();
-
-                // Try to add user to the Users table in the database
-                MySqlCommand cmd = connection.CreateCommand();
-                cmd.CommandText = "INSERT INTO Users(fullName, email, passcode) VALUES (@fullName, @email, @passcode)";
-                cmd.Parameters.AddWithValue("@fullName", registrationInfo.FullName);
-                cmd.Parameters.AddWithValue("@email", registrationInfo.Email.ToLower());
-                cmd.Parameters.AddWithValue("@passcode", passcode);
-                cmd.ExecuteNonQuery();
-
-                // Close connection
-                connection.Close();
+                model.FullName = resultsTable.Rows[0]["fullName"].ToString();
+                model.Email = resultsTable.Rows[0]["email"].ToString();
             }
-            catch (Exception)
-            {
-                // Something failed while trying to add user
-                return false;
-            }
+            
+            return model;
+        }
 
+        // Updates user info in the database (returns true on success or false on failure.)
+        public static Boolean ManageAcct(ManageAcctVModel model, string userID)
+        {
+            // Set up values and conditions for database update.
+            Dictionary<string, string> values = new Dictionary<string, string>() { { "fullName", model.FullName } };
+            Dictionary<string, string> conditions = new Dictionary<string, string>() { { "userID", userID } };
+
+            // Try to update user in the database.
+            return DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions, values);
+        }
+
+        // Used to send e-mails to the user (returns true when e-mail is successfully sent, false on failure.)
+        public static Boolean SendEmail(string emailMessage, string emailSubject, string toEmail, string toName)
+        {
             // APPSETTING_MANDRILL_API_KEY is from Azure server config, replace with your API key if you deploy to another server
             string APIKey = Environment.GetEnvironmentVariable("APPSETTING_MANDRILL_API_KEY");
 
@@ -89,12 +124,12 @@ namespace Our_Calendar.Models
             // Create e-mail message.
             object message = new
             {
-                html = "Thank you for registering for an Our Calander account. Please verify your e-mail address by going to http://ourcal.azurewebsites.net/account/setpassword/" + passcode,
-                text = "Thank you for registering for an Our Calander account. Please verify your e-mail address by going to http://ourcal.azurewebsites.net/account/setpassword/" + passcode,
-                subject = "Account Setup",
+                html = emailMessage,
+                text = emailMessage,
+                subject = emailSubject,
                 from_email = "OurCalendar@blakebuckit.com",
                 from_name = "Our Calendar App",
-                to = new List<Recipient>{new Recipient {email = registrationInfo.Email, name = registrationInfo.FullName}}
+                to = new List<Recipient> { new Recipient { email = toEmail, name = toName } }
             };
 
             // Attempt to send e-mail
@@ -104,162 +139,67 @@ namespace Our_Calendar.Models
             return returnValue[0].status == "sent";
         }
 
+        // Creates a new passcode and send user a password reset e-mail.
         public static Boolean SendPasswordReset(ForgotPasswordVModel AccountInfo)
         {
             // Create a unique code to be used for setting their password            
             Random random = new Random();
-            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
-            string passcode = Convert.ToBase64String(hashAlgo.ComputeHash(System.Text.Encoding.Unicode.GetBytes(random.Next().ToString(CultureInfo.InvariantCulture))));
+            string passcode = HashIT(random.Next().ToString(CultureInfo.InvariantCulture));
 
-            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
-            // you can replace it with your connection string if deploying to a different server.
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
+            // Prepare database values and conditions for setting the passcode in the database.
+            Dictionary<string, string> values = new Dictionary<string, string>() { { "passcode", passcode } };
+            Dictionary<string, string> conditions = new Dictionary<string, string>() { { "email", AccountInfo.Email.ToLower() } };
 
-            try
-            {
-                // Open connection to Database
-                connection.Open();
+            // Try to set passcode in the database.
+            if (!DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions, values)) return false;
 
-                // Set the passcode in the database
-                MySqlCommand cmd = connection.CreateCommand();
-                cmd.CommandText = "UPDATE Users SET passcode = @passcode WHERE email = @email";
-                cmd.Parameters.AddWithValue("@passcode", passcode);
-                cmd.Parameters.AddWithValue("@email", AccountInfo.Email.ToLower());
-                cmd.ExecuteNonQuery();
+            // Create e-mail message
+            string message = "Someone has requested a password reset on your Our Calendar account. If this was you please follow this link: http://ourcal.azurewebsites.net/account/setpassword/" + passcode + " otherwise please delete this e-mail.";
 
-                // Close connection
-                connection.Close();
-            }
-            catch (Exception)
-            {
-                // Something failed while trying to add passcode
-                return false;
-            }
-
-            // APPSETTING_MANDRILL_API_KEY is from Azure server config, replace with your API key if you deploy to another server
-            string APIKey = Environment.GetEnvironmentVariable("APPSETTING_MANDRILL_API_KEY");
-
-            // Create a MandrillApi instance.
-            MandrillApi.MandrillApi _mapi = new MandrillApi.MandrillApi(APIKey, "json");
-
-            // Create e-mail message.
-            object message = new
-            {
-                html = "Someone has requested a password reset on your Our Calendar account. If this was you please follow this link: http://ourcal.azurewebsites.net/account/setpassword/" + passcode + " otherwise please delete this e-mail.",
-                text = "Someone has requested a password reset on your Our Calendar account. If this was you please follow this link: http://ourcal.azurewebsites.net/account/setpassword/" + passcode + " otherwise please delete this e-mail.",
-                subject = "Our Calendar App - Password Reset",
-                from_email = "OurCalendar@blakebuckit.com",
-                from_name = "Our Calendar App",
-                to = new List<Recipient> { new Recipient { email = AccountInfo.Email } }
-            };
-
-            // Attempt to send e-mail
-            List<MandrillApi.Model.RecipientReturn> returnValue = _mapi.send(message);
-
-            // Returns false if confirmation e-mail was not sent
-            return returnValue[0].status == "sent";
+            // Attempt to send e-mail message.
+            return SendEmail(message, "Our Calendar App - Password Reset", AccountInfo.Email, AccountInfo.Email);
         }
 
-        public static Boolean SetPassword(string password, string passcode = null, int userID = 0)
+        // Actually updates the user's password (returns true on success, false on failure).
+        public static Boolean SetPassword(string password, string passcode = null, string userID = "")
         {
             // Make sure that either the passcode or UserID is set.
-            if (passcode == null && userID == 0) return false;
+            if (passcode == null && userID == "") return false;
 
             // Hash the selected password to protect it in the database
-            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
-            string encryptedPassword = Convert.ToBase64String(hashAlgo.ComputeHash(System.Text.Encoding.Unicode.GetBytes(password)));
-
-            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
-            // you can replace it with your connection string if deploying to a different server.
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-
-            try
+            string encryptedPassword = HashIT(password);
+            
+            // Prepare password for update in database
+            Dictionary<string, string> values = new Dictionary<string, string>() { { "password", password }, {"passcode", ""} };
+            
+            // If passcode is given (use it)
+            if (passcode != null)
             {
-                // Open connection to Database
-                connection.Open();
-
-                // Try to save the user's password in the database
-                MySqlCommand cmd = connection.CreateCommand();
-
-                // If a passcode was given use it
-                if (passcode != null)
-                {
-                    cmd.CommandText = "UPDATE Users SET passcode = '', password = @password WHERE passcode = @passcode";
-                    cmd.Parameters.AddWithValue("@passcode", passcode);
-                }
-                else
-                {
-                    // If no passcode was given try userID
-                    cmd.CommandText = "UPDATE Users SET passcode = '', password = @password WHERE UserID = @userID";
-                    cmd.Parameters.AddWithValue("@userID", userID);
-                }
-                // Bind the encrypted password to the password parameter in the query.
-                cmd.Parameters.AddWithValue("@password", encryptedPassword);
-                // Execute the query.                
-                if (cmd.ExecuteNonQuery() <= 0)
-                {
-                    // If the number of rows affected by 
-                    // the query is 0 or less then return false
-                    return false;
-                }
-
-                // Close connection
-                connection.Close();
+                // Prepare database update condition
+                Dictionary<string, string> conditions = new Dictionary<string, string>() { { "passcode", passcode } };
+                // Try to update database.
+                return DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions, values);
             }
-            catch (Exception)
+            else
             {
-                // Something failed while trying to set the password
-                return false;
-            }
-            // Returns true meaning the password was successfully set.
-            return true;
+                // Prepare database update condition
+                Dictionary<string, string> conditions = new Dictionary<string, string>() { { "userID", userID } };
+                // Try to update database.
+                return DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions, values);
+            }            
         }
 
         // Returns a integer representing the UserID of the user 
         // or 0 indicating the user doesn't exist.
         public static int UserExist(string userEmail)
         {
-            // Create database connection APPSETTING_MYSQL_CONNECTION_STRING is from Azure server config 
-            // you can replace it with your connection string if deploying to a different server.
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));            
-            
-            try
-            {
-                // Open connection to Database
-                connection.Open();
+            // Prepare parameters for query and try query.
+            Dictionary<string, string> conditions = new Dictionary<string, string>() { { "email", userEmail } };            
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT userID FROM Users WHERE email = @email LIMIT 1", conditions);
 
-                // Queries database for the UserID of a user who has the given e-mail address                
-                MySqlCommand cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT userID FROM Users WHERE email = @email LIMIT 1";
-                cmd.Parameters.AddWithValue("@email", userEmail.ToLower());
-                
-                // Puts query results into Datatable
-                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
-                DataTable dt = new DataTable();
-                a.Fill(dt);
-                               
-                // If count equals 0 then return false ("User doesn't exist")
-                if (dt.Rows.Count <= 0)
-                {
-                    return 0;
-                }
-                else
-                {
-                    return Convert.ToInt32(dt.Rows[0]["userID"]);
-                }
-            }
-            catch (Exception)
-            {
-                // On error return 0, that the user does exist 
-                // (this will prevent duplicate account creation in the case of an error)
-                return 0;
-            }
-        }
-
-
-        
-
-        
+            // Returns the UserID of the user or 0 if user was not found.
+            return resultsTable.Rows.Count <= 0 ? 0 : Convert.ToInt32(dt.Rows[0]["userID"]);
+        }                
     }
 
 
