@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Web;
@@ -12,136 +13,105 @@ namespace Our_Calendar.Models
 {
     public class EventManageModel
     {
-        public static Boolean CreateEvent(AddEventVModel eventInfo)
+        public static Boolean DeleteEvent(string eventID, string userID)
         {
-            // Create database connection
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
-
-            int unixDate = ConvertToTimestamp(Convert.ToDateTime(eventInfo.EventDate));
-
-            try
+            // Set condition of DELETE to match given eventID
+            Dictionary<string, string> conditions = new Dictionary<string, string>()
             {
-                // Try to add user to the Users table in the database
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "INSERT INTO CalendarEvents (userID, eventName, eventDate, eventTime, eventLocation, shortDesc, fullDesc, eventImageURL) VALUES (@userID, @eventName, @eventDate, @eventTime, @eventLocation, @shortDesc, @fullDesc, @eventImageURL)";
-                cmd.Parameters.AddWithValue("@userID", eventInfo.UserID);
-                cmd.Parameters.AddWithValue("@eventName", eventInfo.EventName);
-                cmd.Parameters.AddWithValue("@eventDate", unixDate);
-                cmd.Parameters.AddWithValue("@eventTime", eventInfo.EventTime);
-                cmd.Parameters.AddWithValue("@eventLocation", eventInfo.EventLocation);
-                cmd.Parameters.AddWithValue("@shortDesc", eventInfo.ShortDesc);
-                cmd.Parameters.AddWithValue("@fullDesc", eventInfo.FullDesc);
-                cmd.Parameters.AddWithValue("@eventImageURL", eventInfo.EventImage);
-                cmd.ExecuteNonQuery();
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }            
+                { "eventID", eventID },
+                { "userID", userID}
+            };
+            return DatabaseHelper.DatabaseHelper.DbDelete("Events", conditions);
         }
 
-        public static DataTable GetEventDetails(int eventID)
+        public static Boolean SaveEvent(EventVModel eventInfo)
         {
-            DataTable dt = new DataTable();
+            // Prepare values for INSERT into database
+            Dictionary<string, string> values = new Dictionary<string, string>()
+            {
+                {"userID", eventInfo.UserID},
+                {"eventName", eventInfo.EventName},
+                {"eventDate", eventInfo.EventDate.ToString(CultureInfo.InvariantCulture)},
+                {"month", eventInfo.EventDate.Month.ToString(CultureInfo.InvariantCulture)},
+                {"day", eventInfo.EventDate.Day.ToString(CultureInfo.InvariantCulture)},
+                {"year", eventInfo.EventDate.Year.ToString(CultureInfo.InvariantCulture)},
+                {"eventTime", eventInfo.EventTime},
+                {"eventLocation", eventInfo.EventLocation},
+                {"fullDesc", eventInfo.FullDesc}
+            };
 
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
-            try
+            // If an eventID is given then this is an update
+            if (eventInfo.EventID != "")
             {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT * FROM Users WHERE eventID = @eventID LIMIT 1";
-                cmd.Parameters.AddWithValue("@eventID", eventID);
-                MySqlDataAdapter a = new MySqlDataAdapter(cmd);                
-                a.Fill(dt);
+                // Set condition of UPDATE to match given eventID
+                Dictionary<string, string> conditions = new Dictionary<string, string>(){{"eventID", eventInfo.EventID}};
+
+                // Try UPDATE.
+                return DatabaseHelper.DatabaseHelper.DbUpdate("Events", conditions, values);
             }
-            catch (Exception)
-            {
-                return dt;
-            }
-            return dt;
+
+            // If got this far it must be a new event (Try INSERT)
+            return DatabaseHelper.DatabaseHelper.DbInsert("Events", values);                    
         }
 
-        public static DataTable GetAllEvents(int userID)
+        public static EventVModel GetEventDetails(string eventID, string userID)
         {
-            DataTable dt = new DataTable();
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                { "eventID", eventID },
+                { "userID", userID}
+            };
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT * FROM Events WHERE eventID = @eventID AND userID = @userID LIMIT 1", parameters);           
 
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
-            try
+            EventVModel eventInfo = new EventVModel()
             {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT * FROM Users WHERE userID = @userID";
-                cmd.Parameters.AddWithValue("@userID", userID);
-                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
-                a.Fill(dt);
-            }
-            catch (Exception)
-            {
-                return dt;
-            }
-            return dt;
+                EventID = resultsTable.Rows[0]["eventID"].ToString(),
+                UserID = resultsTable.Rows[0]["userID"].ToString(),
+                EventDate = Convert.ToDateTime(resultsTable.Rows[0]["eventDate"].ToString()),
+                EventTime = resultsTable.Rows[0]["eventTime"].ToString(),
+                EventLocation = resultsTable.Rows[0]["eventLocation"].ToString(),
+                FullDesc = resultsTable.Rows[0]["fullDesc"].ToString()
+            };
+            return eventInfo;
         }
 
-        // The int parameters should be Unix timestamps, use ConvertToTimestamp to get the time stamps.
-        public static List<EventModel> GetAllEvents(int userID, int month, int year)
+        public static List<EventModel> GetAllEvents(string userID)
         {
-            DataTable dt = new DataTable();
-            List<EventModel> events = new List<EventModel> {};
+            List<EventModel> events = new List<EventModel> { };
             EventModel eventModel = new EventModel();
 
-            MySqlConnection connection = new MySqlConnection(Environment.GetEnvironmentVariable("APPSETTING_MYSQL_CONNECTION_STRING"));
-            MySqlCommand cmd;
-            connection.Open();
-            try
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
             {
-                cmd = connection.CreateCommand();
-                cmd.CommandText = "SELECT * FROM Events WHERE userID = @userID AND month = @month AND year = @year";
-                cmd.Parameters.AddWithValue("@userID", userID);
-                cmd.Parameters.AddWithValue("@month", month);
-                cmd.Parameters.AddWithValue("@year", year);  
-                MySqlDataAdapter a = new MySqlDataAdapter(cmd);
-                a.Fill(dt);
-            }
-            catch (Exception)
-            {
-                return events;
-            }
+                { "userID", userID }
+            };
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT day, eventName FROM Events WHERE userID = @userID", parameters);
 
-            for (int i = 0; i < dt.Rows.Count; i++)
+            for (int i = 0; i < resultsTable.Rows.Count; i++)
             {
-                events.Add(new EventModel(){DayOfMonth = Convert.ToInt32(dt.Rows[i]["day"]), EventName = dt.Rows[i]["eventName"].ToString()});
+                events.Add(new EventModel() { DayOfMonth = Convert.ToInt32(resultsTable.Rows[i]["day"]), EventName = resultsTable.Rows[i]["eventName"].ToString() });
             }
             return events;
         }
 
-        public static int[] GetMonthTimeStamps(DateTime date)
+        // The int parameters should be Unix timestamps, use ConvertToTimestamp to get the time stamps.
+        public static List<EventModel> GetAllEvents(string userID, string month, string year)
         {
-            // Create integer array to hold timestamps
-            int[] timestamps = {};
-            
-            // Get timestamp for start of the month
-            timestamps[0] = ConvertToTimestamp(date);
+            List<EventModel> events = new List<EventModel> {};
+            EventModel eventModel = new EventModel();
 
-            // Get timestamp for end of the month
-            DateTime nextMonth = date.AddMonths(1);
-            timestamps[1] = ConvertToTimestamp(nextMonth);
+            Dictionary<string, string> parameters = new Dictionary<string, string>()
+            {
+                { "userID", userID },
+                { "month", month},
+                { "year", year}
+            };
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT day, eventName FROM Events WHERE userID = @userID AND month = @month AND year = @year", parameters);           
 
-            return timestamps;
-        }
-
-        public static int ConvertToTimestamp(DateTime value)
-        {
-            //create Timespan by subtracting the value provided from
-            //the Unix Epoch
-            TimeSpan span = (value - new DateTime(1970, 1, 1, 0, 0, 0, 0).ToLocalTime());
-
-            //return the total seconds (which is a UNIX timestamp)
-            return (int)span.TotalSeconds;
+            for (int i = 0; i < resultsTable.Rows.Count; i++)
+            {
+                events.Add(new EventModel() { DayOfMonth = Convert.ToInt32(resultsTable.Rows[i]["day"]), EventName = resultsTable.Rows[i]["eventName"].ToString() });
+            }
+            return events;
         }
     }
 
@@ -151,10 +121,13 @@ namespace Our_Calendar.Models
         public int DayOfMonth { get; set; }
     }
 
-    public class AddEventVModel
+    public class EventVModel
     {
         [HiddenInput(DisplayValue = false)]
-        public int? UserID { get; set; }
+        public string UserID { get; set; }
+
+        [HiddenInput(DisplayValue = false)]
+        public string EventID { get; set; }
 
         [Required]
         [Display(Name = "Event Name")]
@@ -162,46 +135,13 @@ namespace Our_Calendar.Models
 
         [Required]
         [Display(Name = "Date of Event")]
-        public string EventDate { get; set; }
+        public DateTime EventDate { get; set; }
 
         [Display(Name = "Time of Event")]
         public string EventTime { get; set; }
 
         [Display(Name = "Location of Event")]
         public string EventLocation { get; set; }
-
-        [Display(Name = "Brief Description of Event")]
-        public string ShortDesc { get; set; }
-
-        [Display(Name = "Description of Event")]
-        public string FullDesc { get; set; }
-
-        [Display(Name = "Upload Event Image")]
-        public HttpPostedFileBase EventImage { get; set; }
-    }
-
-    public class EditEventVModel
-    {
-        [Required]
-        [HiddenInput(DisplayValue = false)]
-        public int? EventID { get; set; }
-
-        [Required]
-        [Display(Name = "Event Name")]
-        public string EventName { get; set; }
-
-        [Required]
-        [Display(Name = "Date of Event")]
-        public string EventDate { get; set; }
-
-        [Display(Name = "Time of Event")]
-        public string EventTime { get; set; }
-
-        [Display(Name = "Location of Event")]
-        public string EventLocation { get; set; }
-
-        [Display(Name = "Brief Description of Event")]
-        public string ShortDesc { get; set; }
 
         [Display(Name = "Description of Event")]
         public string FullDesc { get; set; }

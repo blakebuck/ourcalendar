@@ -12,6 +12,8 @@ namespace Our_Calendar.Controllers
     {
         public ActionResult Manage()
         {
+
+
             return View();
         }
 
@@ -25,7 +27,7 @@ namespace Our_Calendar.Controllers
             ViewBag.startDay = (int) firstDayOfMonth.DayOfWeek;
             ViewBag.DaysInMonth = DateTime.DaysInMonth(year, month);
 
-            List<EventModel> events = EventManageModel.GetAllEvents(userId, month, year);
+            List<EventModel> events = EventManageModel.GetAllEvents(userId.ToString(CultureInfo.InvariantCulture), month.ToString(CultureInfo.InvariantCulture), year.ToString(CultureInfo.InvariantCulture));
 
             ViewBag.Events = events;
 

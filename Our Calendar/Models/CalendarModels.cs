@@ -8,7 +8,6 @@ namespace Our_Calendar.Models
 {
     public class CalendarModel
     {
-        
     }
 
     public class CalendarEventsModel
