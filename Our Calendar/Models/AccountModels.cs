@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Globalization;
 using System.Security.Policy;
+using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
 using System.Web.Services.Description;
@@ -57,7 +58,7 @@ namespace Our_Calendar.Models
             if (DatabaseHelper.DatabaseHelper.DbInsert("Users", values))
             {
                 // Success adding user to database, create e-mail message
-                string message = "Thank you for registering for an Our Calander account. Please verify your e-mail address by going to http://ourcal.azurewebsites.net/account/setpassword/" + passcode;
+                string message = "Thank you for registering for an Our Calander account. Please verify your e-mail address by going to http://ourcal.azurewebsites.net/account/setpassword?passcode=" + HttpUtility.UrlEncode(passcode);
 
                 // Try to send account setup e-mail
                 if (SendEmail(message, "Our Calendar App - Account Setup", registrationInfo.Email, registrationInfo.FullName))
@@ -97,7 +98,6 @@ namespace Our_Calendar.Models
                 model.FullName = resultsTable.Rows[0]["fullName"].ToString();
                 model.Email = resultsTable.Rows[0]["email"].ToString();
             }
-            
             return model;
         }
 
@@ -154,7 +154,7 @@ namespace Our_Calendar.Models
             if (!DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions, values)) return false;
 
             // Create e-mail message
-            string message = "Someone has requested a password reset on your Our Calendar account. If this was you please follow this link: http://ourcal.azurewebsites.net/account/setpassword/" + passcode + " otherwise please delete this e-mail.";
+            string message = "Someone has requested a password reset on your Our Calendar account. If this was you please follow this link: http://ourcal.azurewebsites.net/account/setpassword?passcode=" + HttpUtility.UrlEncode(passcode) + " otherwise please delete this e-mail.";
 
             // Attempt to send e-mail message.
             return SendEmail(message, "Our Calendar App - Password Reset", AccountInfo.Email, AccountInfo.Email);
@@ -170,23 +170,22 @@ namespace Our_Calendar.Models
             string encryptedPassword = HashIT(password);
             
             // Prepare password for update in database
-            Dictionary<string, string> values = new Dictionary<string, string>() { { "password", password }, {"passcode", ""} };
+            Dictionary<string, string> values = new Dictionary<string, string>() { { "password", encryptedPassword }, { "passcode", "" } };
             
             // If passcode is given (use it)
             if (passcode != null)
             {
                 // Prepare database update condition
                 Dictionary<string, string> conditions = new Dictionary<string, string>() { { "passcode", passcode } };
-                // Try to update database.
-                return DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions, values);
+
+                DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT userID FROM Users WHERE passcode = @passcode", conditions);
+                userID = resultsTable.Rows[0]["userID"] == null ? "0" : resultsTable.Rows[0]["userID"].ToString();
             }
-            else
-            {
-                // Prepare database update condition
-                Dictionary<string, string> conditions = new Dictionary<string, string>() { { "userID", userID } };
-                // Try to update database.
-                return DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions, values);
-            }            
+
+            // Prepare database update condition
+            Dictionary<string, string> conditions4Update = new Dictionary<string, string>() { { "userID", userID } };
+            // Try to update database.
+            return DatabaseHelper.DatabaseHelper.DbUpdate("Users", conditions4Update, values);           
         }
 
         // Returns a integer representing the UserID of the user 
@@ -198,7 +197,7 @@ namespace Our_Calendar.Models
             DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT userID FROM Users WHERE email = @email LIMIT 1", conditions);
 
             // Returns the UserID of the user or 0 if user was not found.
-            return resultsTable.Rows.Count <= 0 ? 0 : Convert.ToInt32(dt.Rows[0]["userID"]);
+            return resultsTable.Rows.Count <= 0 ? 0 : Convert.ToInt32(resultsTable.Rows[0]["userID"]);
         }                
     }
 

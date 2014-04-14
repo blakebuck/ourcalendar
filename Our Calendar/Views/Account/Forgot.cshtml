@@ -1,7 +1,7 @@
-﻿@model Our_Calendar.Models.ManageAcctVModel
+﻿@model Our_Calendar.Models.ForgotPasswordVModel
 
 @{
-    ViewBag.Title = "Manage Account - Our Calendar App";
+    ViewBag.Title = "Forgot Password - Our Calendar App";
 }
 
 @{
@@ -14,7 +14,7 @@
     }
 }
 
-<h2>Manage Account</h2>
+<h2>Forgotten Password?</h2>
 
 <script src="@Url.Content("~/Scripts/jquery.validate.min.js")" type="text/javascript"></script>
 <script src="@Url.Content("~/Scripts/jquery.validate.unobtrusive.min.js")" type="text/javascript"></script>
@@ -26,14 +26,6 @@
             <legend></legend>
 
             <div class="editor-label">
-                @Html.LabelFor(model => model.FullName)
-            </div>
-            <div class="editor-field">
-                @Html.EditorFor(model => model.FullName)
-                @Html.ValidationMessageFor(model => model.FullName)
-            </div>
-
-            <div class="editor-label">
                 @Html.LabelFor(model => model.Email)
             </div>
             <div class="editor-field">
@@ -42,7 +34,7 @@
             </div>
 
             <p class="pull-right submit-button">
-                <input class="btn btn-success" type="submit" value="Update Info" />
+                <input class="btn btn-primary" type="submit" value="Send Password Reset" />               
             </p>
         </fieldset>
     </div>

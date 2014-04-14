@@ -140,6 +140,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\bootstrap.css" />
     <Content Include="Content\Calendar.css" />
     <Content Include="Global.asax" />
     <Content Include="MandrillAPI\obj\Debug\DesignTimeResolveAssemblyReferencesInput.cache" />
@@ -184,6 +185,10 @@
     <Content Include="Views\Web.config" />
     <Content Include="Views\Calendar\ViewCalendar.cshtml" />
     <Content Include="Views\Shared\_CalendarLayout.cshtml" />
+    <Content Include="Views\Account\Register.cshtml" />
+    <Content Include="Views\Account\Login.cshtml" />
+    <Content Include="Views\Account\SetPassword.cshtml" />
+    <Content Include="Views\Account\Forgot.cshtml" />
     <Content Include="Views\Account\Manage.cshtml" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
@@ -21,7 +22,7 @@ namespace Our_Calendar.Controllers
 
         // Forgot Password (Handler)
         // POST: /Account/Forgot
-
+        [HttpPost]
         public ActionResult Forgot(ForgotPasswordVModel model)
         {
             // Check for errors on the form
@@ -64,7 +65,7 @@ namespace Our_Calendar.Controllers
                     FormsAuthentication.SetAuthCookie(model.Email, true);
 
                     // Saves Email Address in Session Variable
-                    Session["UserID"] = UserManagementModel.UserExist(model.Email);
+                    Session["UserID"] = UserManagementModel.UserExist(model.Email).ToString(CultureInfo.InvariantCulture);
                     
                     // Checks to see if the returnUrl is valid 
                     if (Url.IsLocalUrl(returnUrl) && returnUrl.Length > 1 && returnUrl.StartsWith("/") && !returnUrl.StartsWith("//") && !returnUrl.StartsWith("/\\"))
@@ -105,7 +106,7 @@ namespace Our_Calendar.Controllers
 
         // User Account Management
         // GET: /Account/Manage
-
+        [Authorize]
         public ActionResult Manage()
         {
             // Get user info from database
@@ -116,6 +117,7 @@ namespace Our_Calendar.Controllers
         // User Account Management (Handler)
         // POST: /Account/Manage
         [HttpPost]
+        [Authorize]
         public ActionResult Manage(ManageAcctVModel model)
         {
             return View();
@@ -141,7 +143,7 @@ namespace Our_Calendar.Controllers
             if (ModelState.IsValid)
             {
                 // Check to see if an account already exists for the given e-mail address
-                if (UserManagementModel.UserExist(model.Email.ToLower()) > 0)
+                if (UserManagementModel.UserExist(model.Email.ToLower()) <= 0)
                 {
                     // Try to create account
                     if (UserManagementModel.CreateUser(model))
@@ -152,17 +154,21 @@ namespace Our_Calendar.Controllers
                         // Redirect user to the home page.
                         return RedirectToAction("Index", "Home");                        
                     }
-                    else
-                    {
-                        // Account creation failed, pass message to user.
-                        ViewBag.alertMessage = "There was an error creating your account.";                        
-                    }
+                    // Account creation failed, pass message to user.
+                    ViewBag.AlertHeading = "Sorry.";
+                    ViewBag.Alert = "There was an error creating your account.";
                 }
                 else
                 {
                     // Message for user.
-                    ViewBag.alertMessage = "There is already an account associated with that e-mail address.";
+                    ViewBag.AlertHeading = "Whoa!";
+                    ViewBag.Alert = "There is already an account associated with that e-mail address.";
                 }
+            }
+            else
+            {
+                ViewBag.AlertHeading = "Oops!";
+                ViewBag.Alert = "There were errors on the form you submitted.";
             }
             // If they get here, account creation failed.
             return View(model);
@@ -170,19 +176,13 @@ namespace Our_Calendar.Controllers
 
         // Set/Change Password
         // GET: /Account/SetPassword
-
-        [Authorize]
         public ActionResult SetPassword(string passcode)
         {
-            // Sets ViewBag.passcode equal to the value of passcode 
-            // if it isn't null otherwise equal to empty string.
-            ViewBag.passcode = passcode ?? "";
             return View();
         }
 
         // Set/Change Password (Handler)
         // POST: /Account/SetPassword
-
         [HttpPost]
         public ActionResult SetPassword(SetPasswordVModel model)
         {
@@ -192,22 +192,30 @@ namespace Our_Calendar.Controllers
                 // Check to see if they typed in their password correctly
                 if (model.NewPassword == model.ConfirmPassword)
                 {
-                    // Try to set password
-                    if (UserManagementModel.SetPassword(model.NewPassword, model.Passcode, Convert.ToInt32(Session["UserID"])))
+                    string userID = Session["UserID"] != null ? Session["UserID"].ToString() : null;
+
+                    if (UserManagementModel.SetPassword(model.NewPassword, model.Passcode, userID))
                     {
                         // Success setting password.
                         // Redirect user to the manage calendar page.
-                        return RedirectToAction("Manage", "Calendar");     
+                        return RedirectToAction("Login", "Account");     
                     }
                     else
                     {
-                        ModelState.AddModelError("", "A problem occured while trying to set your password.");
+                        ViewBag.AlertHeading = "Sorry.";
+                        ViewBag.Alert = "A problem occured while trying to set your password.";
                     }
                 }
                 else
                 {
-                    ModelState.AddModelError("", "The typed passwords do not match.");
+                    ViewBag.AlertHeading = "Oops!";
+                    ViewBag.Alert = "The typed passwords do not match.";
                 }
+            }
+            else
+            {
+                ViewBag.AlertHeading = "Oops!";
+                ViewBag.Alert = "There were errors on the form you submitted.";
             }
 
             // If we got this far, something failed, redisplay form

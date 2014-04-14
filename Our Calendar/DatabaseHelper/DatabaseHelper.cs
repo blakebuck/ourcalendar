@@ -149,7 +149,6 @@ namespace Our_Calendar.DatabaseHelper
                 MySqlCommand ConCmd;
                 ConCmd = Con.CreateCommand();
 
-
                 // Create string of values to update (for query below)
                 int i = 1;
                 int count = values.Count;
@@ -162,7 +161,7 @@ namespace Our_Calendar.DatabaseHelper
                     }
                     else
                     {
-                        updateValues += entry.Key + " = " + "@" + entry.Key + ", ";
+                        updateValues += entry.Key + " = " + "@" + entry.Key;
                     }
                     i++;
                 }
@@ -179,7 +178,7 @@ namespace Our_Calendar.DatabaseHelper
                     }
                     else
                     {
-                        updateConditions += entry.Key + " = " + "@" + entry.Key + ", ";
+                        updateConditions += entry.Key + " = " + "@" + entry.Key;
                     }
                     i++;
                 }
@@ -214,6 +213,6 @@ namespace Our_Calendar.DatabaseHelper
             {
                 return false;
             }
-        }
+        }        
     }
 }
