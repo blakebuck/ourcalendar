@@ -10,10 +10,18 @@ namespace Our_Calendar.Controllers
 {
     public class CalendarController : Controller
     {
+        [Authorize]
         public ActionResult Manage()
         {
-
-
+            if (Session["UserID"] != null)
+            {
+                List<EventModel> events = EventManageModel.GetAllEvents(Session["UserID"].ToString());
+                ViewBag.Events = events;
+            }
+            else
+            {
+                return RedirectToAction("Login", "Account");
+            }            
             return View();
         }
 
@@ -30,7 +38,29 @@ namespace Our_Calendar.Controllers
             List<EventModel> events = EventManageModel.GetAllEvents(userId.ToString(CultureInfo.InvariantCulture), month.ToString(CultureInfo.InvariantCulture), year.ToString(CultureInfo.InvariantCulture));
 
             ViewBag.Events = events;
-
+            ViewBag.userID = userId;
+            ViewBag.monthName = firstDayOfMonth.ToString("MMMM yyyy");
+            if (month == 12)
+            {
+                ViewBag.nextMonth = 1;
+                ViewBag.prevMonth = 11;
+                ViewBag.nextYear = year + 1;
+                ViewBag.prevYear = year;
+            }
+            else if (month == 1)
+            {
+                ViewBag.nextMonth = 2;
+                ViewBag.prevMonth = 12;
+                ViewBag.nextYear = year;
+                ViewBag.prevYear = year - 1;
+            }
+            else
+            {
+                ViewBag.nextMonth = month + 1;
+                ViewBag.nextYear = year;
+                ViewBag.prevMonth = month - 1;
+                ViewBag.prevYear = year;
+            }
             return View("ViewCalendar", "_CalendarLayout");
         }
     }

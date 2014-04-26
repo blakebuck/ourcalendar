@@ -4,16 +4,6 @@
     ViewBag.Title = "Forgot Password - Our Calendar App";
 }
 
-@{
-    if (ViewBag.Alert != null)
-    {
-        <div class="alert alert-warning alert-dismissable">
-          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-          <strong>@ViewBag.AlertHeading</strong> @ViewBag.Alert
-        </div>
-    }
-}
-
 <h2>Forgotten Password?</h2>
 
 <script src="@Url.Content("~/Scripts/jquery.validate.min.js")" type="text/javascript"></script>

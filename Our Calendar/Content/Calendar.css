@@ -6,12 +6,90 @@
     margin-left: 1.7%;
     width: 100%;
 }
+
+.calendarRowView {
+    border: solid 1px #e5e5e5;
+    -ms-border-radius: 6px;
+    border-radius: 6px;
+    display: none;
+    max-width: 700px;
+    margin: auto auto 20px;
+    overflow: hidden;
+}
+
+.dateNumber {
+    margin: 5px;
+}
 .dayCell {
     border: solid 1px #ccc;
+    border-left: none;
+    border-top: none; 
     float: left;
     height: 100%;
     width: 13.8%;
 }
-@media (min-width: 800px) {
 
+.dayCell:first-child {
+    border-left: solid 1px #ccc;
+}
+
+.dayLabels {    
+    width: 100%;
+}
+
+.dayLabelsSM {
+    display: none;
+}
+
+.dayOfWeek {
+    border: none;
+    border-bottom: solid 1px #ccc;
+    float: left;
+    font-size: 20px;
+    height: 100%;
+    width: 13.8%;
+    text-align: center;
+    padding: 15px 0 0;
+}
+
+.monthNav {
+    margin: auto auto 20px;
+    width: 95%;
+}
+
+.RowDateLabel {
+    background: #E5E5E5;
+    padding: 10px;
+    font-size: 20px;
+    text-align: center;
+}
+
+.RowEventLabel {
+    border-top: solid 1px #e5e5e5;
+    padding: 10px;
+}
+
+.RowEventLabel h3 {
+    margin: 0;
+}
+
+.weekRow {
+    height: 125px;
+}
+
+@media (max-width: 700px) {
+    #calendarContainer {
+        display: none;
+    }
+
+    .dayLabels {
+        display: none;
+    }
+    .dayLabelsSM {
+        display: inline;
+    }
+    .calendarRowView {
+    display: block;
+    max-width: 95%;
+    }
 }

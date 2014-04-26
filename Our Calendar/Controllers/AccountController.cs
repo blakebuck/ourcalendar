@@ -31,9 +31,18 @@ namespace Our_Calendar.Controllers
                 // Send password reset e-mail
                 if (UserManagementModel.SendPasswordReset(model))
                 {
+                    SessionAlert.SessionAlert.CreateAlert("Please check your e-mail for the password reset e-mail.", "E-mail Sent.", "success");
                     // Redirects to the home page.
                     return RedirectToAction("Index", "Home");
                 }
+                else
+                {
+                    SessionAlert.SessionAlert.CreateAlert("There was a problem sending your password reset e-mail.", "Oh No!");
+                }
+            }
+            else
+            {
+                SessionAlert.SessionAlert.CreateAlert("There were errors on the form you submitted.", "Oops!");
             }
             return View();
         }
@@ -43,6 +52,11 @@ namespace Our_Calendar.Controllers
 
         public ActionResult Login()
         {
+            if (Session["UserID"] != null)
+            {
+                // Redirects to Manage in the Calendar controller
+                return RedirectToAction("Manage", "Calendar");
+            }
             return View();
         }
 
@@ -82,8 +96,12 @@ namespace Our_Calendar.Controllers
                 else
                 {
                     // Send the user an error message
-                    ModelState.AddModelError("", "The user name or password provided is incorrect.");
+                    SessionAlert.SessionAlert.CreateAlert("The e-mail address or password provided is incorrect.", "Whoops!");
                 }
+            }
+            else
+            {
+                SessionAlert.SessionAlert.CreateAlert("There were errors on the form you submitted.", "Oops!");
             }
 
             // If we got this far, something failed, redisplay form
@@ -109,9 +127,13 @@ namespace Our_Calendar.Controllers
         [Authorize]
         public ActionResult Manage()
         {
-            // Get user info from database
-            ManageAcctVModel model = UserManagementModel.ManageAcct(Session["UserID"].ToString());
-            return View(model);
+            if (Session["UserID"] != null)
+            {
+                // Get user info from database
+                ManageAcctVModel model = UserManagementModel.ManageAcct(Session["UserID"].ToString());
+                return View(model);
+            }
+            return RedirectToAction("Login", "Account");
         }
 
         // User Account Management (Handler)
@@ -120,7 +142,32 @@ namespace Our_Calendar.Controllers
         [Authorize]
         public ActionResult Manage(ManageAcctVModel model)
         {
-            return View();
+            if (Session["UserID"] != null)
+            {
+                if (ModelState.IsValid)
+                {
+                    // Checks to see if the password given is valid
+                    if (UserManagementModel.ManageAcct(model, Session["UserID"].ToString()))
+                    {
+                        SessionAlert.SessionAlert.CreateAlert("Your info has been updated.", "Success!", "success");
+                        
+                        // Get user updated info from database
+                        ManageAcctVModel updatedModel = UserManagementModel.ManageAcct(Session["UserID"].ToString());
+                        return View(updatedModel);
+                    }
+                    else
+                    {
+                        SessionAlert.SessionAlert.CreateAlert("Something happened while trying to update your info.",
+                            "IDK!");
+                    }
+                }
+                else
+                {
+                    SessionAlert.SessionAlert.CreateAlert("There were errors on the form you submitted.", "Oops!");
+                }
+                return View();
+            }
+            return RedirectToAction("Login", "Account");
         }
 
 
@@ -149,26 +196,23 @@ namespace Our_Calendar.Controllers
                     if (UserManagementModel.CreateUser(model))
                     {
                         // Message for user.
-                        ViewBag.alertMessage = "Account successfully created, check your e-mail for account confirmation e-mail!";
+                        SessionAlert.SessionAlert.CreateAlert("Your account was successfully created, check your e-mail for account confirmation e-mail!", "Success!!", "success");
 
                         // Redirect user to the home page.
                         return RedirectToAction("Index", "Home");                        
                     }
                     // Account creation failed, pass message to user.
-                    ViewBag.AlertHeading = "Sorry.";
-                    ViewBag.Alert = "There was an error creating your account.";
+                    SessionAlert.SessionAlert.CreateAlert("There was an error creating your account.", "Sorry...");
                 }
                 else
                 {
                     // Message for user.
-                    ViewBag.AlertHeading = "Whoa!";
-                    ViewBag.Alert = "There is already an account associated with that e-mail address.";
+                    SessionAlert.SessionAlert.CreateAlert("There is already an account associated with that e-mail address.", "Whoa!");
                 }
             }
             else
             {
-                ViewBag.AlertHeading = "Oops!";
-                ViewBag.Alert = "There were errors on the form you submitted.";
+                SessionAlert.SessionAlert.CreateAlert("There were errors on the form you submitted.", "Oops!");
             }
             // If they get here, account creation failed.
             return View(model);
@@ -198,24 +242,22 @@ namespace Our_Calendar.Controllers
                     {
                         // Success setting password.
                         // Redirect user to the manage calendar page.
+                        SessionAlert.SessionAlert.CreateAlert("Your password has been set.", "What a Password!", "success");
                         return RedirectToAction("Login", "Account");     
                     }
                     else
                     {
-                        ViewBag.AlertHeading = "Sorry.";
-                        ViewBag.Alert = "A problem occured while trying to set your password.";
+                        SessionAlert.SessionAlert.CreateAlert("A problem occured while trying to set your password.", "Sorry.");
                     }
                 }
                 else
                 {
-                    ViewBag.AlertHeading = "Oops!";
-                    ViewBag.Alert = "The typed passwords do not match.";
+                    SessionAlert.SessionAlert.CreateAlert("The typed passwords do not match.", "Oops!");
                 }
             }
             else
             {
-                ViewBag.AlertHeading = "Oops!";
-                ViewBag.Alert = "There were errors on the form you submitted.";
+                SessionAlert.SessionAlert.CreateAlert("There were errors on the form you submitted.", "Oops!");
             }
 
             // If we got this far, something failed, redisplay form

@@ -61,9 +61,11 @@ namespace Our_Calendar.DatabaseHelper
             }
         }
 
-        static public Boolean DbInsert(String table, Dictionary<string, string> values)
+        static public Boolean DbInsert(string table, Dictionary<string, string> values)
         {
             MySqlConnection Con = DbConnect();
+
+            values = values.Where(i => !string.IsNullOrWhiteSpace(i.Value)).ToDictionary(i => i.Key, i => i.Value);
 
             try
             {
@@ -89,14 +91,13 @@ namespace Our_Calendar.DatabaseHelper
                     }
                     i++;
                 }
-
+                
                 ConCmd.CommandText = "INSERT INTO " + table + " (" + columns + ") VALUES (" + parameters + ")";
 
                 foreach (KeyValuePair<string, string> entry in values)
                 {
                     ConCmd.Parameters.AddWithValue("@" + entry.Key, entry.Value);
                 }
-
                 ConCmd.ExecuteNonQuery();
                 Con.Close();
                 return true;

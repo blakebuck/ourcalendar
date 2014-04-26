@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Security.Policy;
+using System.Text;
 using System.Web;
 using System.Web.Mvc;
 using System.Web.Security;
@@ -72,17 +74,33 @@ namespace Our_Calendar.Models
         }
 
         // Creates SHA256 hashes of the given string.
-        public static string HashIT(string what2Hash)
-        {            
-            // Next 3 lines create hash.
+        public static string HashIT(string what2Hash, Boolean md5 = false)
+        {
+            byte[] hashed;
             byte[] raw = System.Text.Encoding.Unicode.GetBytes(what2Hash);
-            System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
-            byte[] hashed = hashAlgo.ComputeHash(raw);
+
+            if (md5)
+            {
+                MD5 md5Hash = System.Security.Cryptography.MD5.Create();
+                hashed = md5Hash.ComputeHash(raw);
+            }
+            else
+            {
+                System.Security.Cryptography.HashAlgorithm hashAlgo = new System.Security.Cryptography.SHA256Managed();
+                hashed = hashAlgo.ComputeHash(raw);
+            }
+
+            StringBuilder sBuilder = new StringBuilder();
+
+            // Loop through each byte of the hashed data  
+            // and format each one as a hexadecimal string. 
+            for (int i = 0; i < hashed.Length; i++)
+            {
+                sBuilder.Append(hashed[i].ToString("x2"));
+            }
 
             // Convert byte hash to string
-            string hashedString = Convert.ToBase64String(hashed); 
-            
-            return hashedString;
+            return sBuilder.ToString(); 
         }
 
         // Returns user info from database used on the manage user account page.
@@ -227,7 +245,6 @@ namespace Our_Calendar.Models
         [Display(Name = "Full Name")]
         public string FullName { get; set; }
 
-        [Required]
         [DataType(DataType.EmailAddress)]
         [Display(Name = "Email Address")]
         public string Email { get; set; }

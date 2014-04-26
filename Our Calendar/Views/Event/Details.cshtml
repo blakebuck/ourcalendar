@@ -1,0 +1,34 @@
+﻿@model Our_Calendar.Models.EventVModel
+
+@{
+    ViewBag.Title = "View Event - Our Calendar App";
+}
+
+<h2>View Event</h2>
+
+<fieldset>
+    <legend></legend>
+    <div class="col-sm-6 col-sm-offset-3">
+        
+        <div>
+            <img src="/uploads/@Model.EventImage" class="img-responsive"/>
+        </div>
+
+        <h3 class="text-center">@Model.EventName</h3>
+        
+        <p>
+            <b>When:</b>
+            @Model.EventDate.ToString("MMMM dd, yyyy") @Model.EventTime
+        </p>
+        
+        <p>
+            <b>Where:</b>
+            @Model.EventLocation 
+        </p>
+        
+        <b>Description of Event:</b>
+        <p>
+            @Model.FullDesc
+        </p>
+    </div>
+</fieldset>

@@ -35,23 +35,22 @@ namespace Our_Calendar.Models
                 {"month", eventInfo.EventDate.Month.ToString(CultureInfo.InvariantCulture)},
                 {"day", eventInfo.EventDate.Day.ToString(CultureInfo.InvariantCulture)},
                 {"year", eventInfo.EventDate.Year.ToString(CultureInfo.InvariantCulture)},
-                {"eventTime", eventInfo.EventTime},
-                {"eventLocation", eventInfo.EventLocation},
-                {"fullDesc", eventInfo.FullDesc}
+                {"time", eventInfo.EventTime},
+                {"location", eventInfo.EventLocation},
+                {"fullDesc", eventInfo.FullDesc},
+                {"imageURL", eventInfo.EventImage}
             };
 
             // If an eventID is given then this is an update
-            if (eventInfo.EventID != "")
+            if (Convert.ToInt32(eventInfo.EventID) > 0)
             {
                 // Set condition of UPDATE to match given eventID
-                Dictionary<string, string> conditions = new Dictionary<string, string>(){{"eventID", eventInfo.EventID}};
+                Dictionary<string, string> conditions = new Dictionary<string, string>() { { "eventID", eventInfo.EventID } };
 
                 // Try UPDATE.
-                return DatabaseHelper.DatabaseHelper.DbUpdate("Events", conditions, values);
+                return DatabaseHelper.DatabaseHelper.DbUpdate("Events", conditions, values);  
             }
-
-            // If got this far it must be a new event (Try INSERT)
-            return DatabaseHelper.DatabaseHelper.DbInsert("Events", values);                    
+            return DatabaseHelper.DatabaseHelper.DbInsert("Events", values);                      
         }
 
         public static EventVModel GetEventDetails(string eventID, string userID)
@@ -67,11 +66,14 @@ namespace Our_Calendar.Models
             {
                 EventID = resultsTable.Rows[0]["eventID"].ToString(),
                 UserID = resultsTable.Rows[0]["userID"].ToString(),
+                EventName = resultsTable.Rows[0]["eventName"].ToString(),
                 EventDate = Convert.ToDateTime(resultsTable.Rows[0]["eventDate"].ToString()),
-                EventTime = resultsTable.Rows[0]["eventTime"].ToString(),
-                EventLocation = resultsTable.Rows[0]["eventLocation"].ToString(),
-                FullDesc = resultsTable.Rows[0]["fullDesc"].ToString()
+                EventTime = resultsTable.Rows[0]["time"].ToString(),
+                EventLocation = resultsTable.Rows[0]["location"].ToString(),
+                FullDesc = resultsTable.Rows[0]["fullDesc"].ToString(),
+                EventImage = resultsTable.Rows[0]["imageURL"].ToString()
             };
+
             return eventInfo;
         }
 
@@ -84,11 +86,11 @@ namespace Our_Calendar.Models
             {
                 { "userID", userID }
             };
-            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT day, eventName FROM Events WHERE userID = @userID", parameters);
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT day, eventName, eventID, eventDate FROM Events WHERE userID = @userID", parameters);
 
             for (int i = 0; i < resultsTable.Rows.Count; i++)
             {
-                events.Add(new EventModel() { DayOfMonth = Convert.ToInt32(resultsTable.Rows[i]["day"]), EventName = resultsTable.Rows[i]["eventName"].ToString() });
+                events.Add(new EventModel() { DayOfMonth = Convert.ToInt32(resultsTable.Rows[i]["day"]), EventName = resultsTable.Rows[i]["eventName"].ToString(), EventID = resultsTable.Rows[i]["eventID"].ToString(), Date = Convert.ToDateTime(resultsTable.Rows[i]["eventDate"].ToString()) });
             }
             return events;
         }
@@ -105,11 +107,11 @@ namespace Our_Calendar.Models
                 { "month", month},
                 { "year", year}
             };
-            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT day, eventName FROM Events WHERE userID = @userID AND month = @month AND year = @year", parameters);           
+            DataTable resultsTable = DatabaseHelper.DatabaseHelper.DbSelect("SELECT day, eventName, eventID, eventDate, time FROM Events WHERE userID = @userID AND month = @month AND year = @year", parameters);           
 
             for (int i = 0; i < resultsTable.Rows.Count; i++)
             {
-                events.Add(new EventModel() { DayOfMonth = Convert.ToInt32(resultsTable.Rows[i]["day"]), EventName = resultsTable.Rows[i]["eventName"].ToString() });
+                events.Add(new EventModel() { DayOfMonth = Convert.ToInt32(resultsTable.Rows[i]["day"]), EventName = resultsTable.Rows[i]["eventName"].ToString(), EventID = resultsTable.Rows[i]["eventID"].ToString(), Date = Convert.ToDateTime(resultsTable.Rows[i]["eventDate"].ToString()), EventTime = resultsTable.Rows[i]["time"].ToString()});
             }
             return events;
         }
@@ -118,7 +120,10 @@ namespace Our_Calendar.Models
     public class EventModel
     {
         public string EventName { get; set; }
+        public string EventID { get; set; }
         public int DayOfMonth { get; set; }
+        public DateTime Date { get; set; }
+        public string EventTime { get; set; }
     }
 
     public class EventVModel
@@ -144,10 +149,11 @@ namespace Our_Calendar.Models
         public string EventLocation { get; set; }
 
         [Display(Name = "Description of Event")]
+        [DataType(DataType.MultilineText)]
         public string FullDesc { get; set; }
 
         [Display(Name = "Upload Event Image")]
-        public HttpPostedFileBase EventImage { get; set; }
+        public string EventImage { get; set; }
     }
 
     public class ViewEventVModel

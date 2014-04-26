@@ -1,0 +1,55 @@
+﻿@using Our_Calendar.Models
+@{
+    ViewBag.Title = "Manage Calendar - Our Calendar App";
+}
+@{
+    if (ViewBag.Alert != null)
+    {
+        <div class="alert alert-warning alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <strong>@ViewBag.AlertHeading</strong> @ViewBag.Alert
+        </div>
+    }
+}
+
+
+<h2>Manage Calendar</h2>
+<br/><br/>
+<div class="col-sm-6 col-sm-offset-3 clearfix">
+    <div id="eventList">
+        <ul class="list-unstyled">
+            @{
+                if (ViewBag.events.Count > 0)
+                {
+                    foreach (EventModel eventInfo in ViewBag.events)
+                    {
+                        <li>
+                            <a href="/Event/Details?eventID=@eventInfo.EventID&userID=@Session["UserID"]">@eventInfo.EventName (@eventInfo.Date.ToString("MMMMM yyyy"))</a>
+                            <span class="pull-right event-options">
+                                <a href="/Event/Delete?eventID=@eventInfo.EventID">
+                                    <img src="@Url.Content("~/Content/Images/date_delete.png")" alt="Delete Event" title="Delete Event">
+                                </a>                                
+                            </span>
+                            <span class="pull-right event-options">
+                                <a href="/Event/Edit?eventID=@eventInfo.EventID">
+                                    <img src="@Url.Content("~/Content/Images/date_edit.png")" alt="Edit Event" title="Edit Event">
+                                </a>                                  
+                            </span>
+                        </li>
+                    }
+                }
+                else
+                {
+                    <li>No Event Added Yet!</li>
+                }
+            }
+        </ul>
+    </div>
+    @Html.ActionLink("Add Event", "Add", "Event", new object { }, new { @class = "btn btn-success pull-right"})    
+    <div id="embedInfo">Copy and paste the following code on your website to show your calendar.</div>
+    <textarea><iframe width="100%" height="250px" src="http://ourcal.azurewebsites.net/calendar/view?userId=@Session["UserID"]" style="border: none;"></iframe></textarea>
+</div>
+<div class="col-sm-10 col-sm-offset-1 manageCalPreview">
+    <iframe width="100%" height="250px" src="http://ourcal.azurewebsites.net/calendar/view?userId=@Session["UserID"]" style="border: none;"></iframe>
+</div>
+

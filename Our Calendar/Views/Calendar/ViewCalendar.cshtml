@@ -1,39 +1,83 @@
 ﻿@using Our_Calendar.Models
 @{
-    ViewBag.Title = "ViewCalendar";
+    ViewBag.Title = "View Calendar - Our Calendar App";
 }
-
-        <div id="calendarContainer">
-            @{ int day = 1;
-                int squareCount = 1; }
-            @for (int i = 0; i <= 5; i++) {
+<h1 class="text-center">@ViewBag.monthName</h1>
+<div class="monthNav clearfix">
+    <div class="pull-right">
+        <a href="/Calendar/View?userId=@ViewBag.userID&month=@ViewBag.NextMonth&year=@ViewBag.nextYear" class="btn btn-primary">Next Month</a>        
+    </div>
+    <div class="pull-left">
+        <a href="/Calendar/View?userId=@ViewBag.userID&month=@ViewBag.prevMonth&year=@ViewBag.prevYear" class="btn btn-primary">Previous Month</a>        
+    </div>
+</div>
+<div id="calendarContainer">
+    <div class="dayLabels">
+        <div class="dayOfWeek">Sunday</div>
+        <div class="dayOfWeek">Monday</div>
+        <div class="dayOfWeek">Tuesday</div>
+        <div class="dayOfWeek">Wednesday</div>
+        <div class="dayOfWeek">Thursday</div>
+        <div class="dayOfWeek">Friday</div>
+        <div class="dayOfWeek">Saturday</div>
+    </div>
             
-                <div class="weekRow">
-                    @for (int d = 1; d <= 7; d++)
-                    {
-                        if (day <= ViewBag.DaysInMonth)
+    @{ int day = 1; int squareCount = 1; }
+    @for (int i = 0; i <= 5; i++) 
+    {            
+        <div class="weekRow">
+            @for (int d = 1; d <= 7; d++)
+            {
+                if (day <= ViewBag.DaysInMonth)
+                {
+                    <div class="dayCell">
+                        @if (squareCount > (int) ViewBag.startDay)
                         {
-                            <div class="dayCell">
-                                @if (squareCount > (int) ViewBag.startDay)
-                                {
-                                    <div class="dateNumber">@day</div>
+                            <div class="dateNumber">@day</div>
                                 
-                                    foreach (EventModel date in ViewBag.Events)
-                                    {
-                                        if (date.DayOfMonth == day)
-                                        {
-                                            <a href="/events/viewevent/@date">@date.EventName</a>
-                                        }
-                                    }
-                                    day++;
-                                }                     
-                            </div>
-                            
-                            squareCount++;
-                        }                                          
-                    }
-                    
+                            foreach (EventModel date in ViewBag.Events)
+                            {
+                                if (date.DayOfMonth == day)
+                                {
+                                    <a href="/event/details?eventID=@date.EventID&userID=@ViewBag.userID">@date.EventName</a>
+                                }
+                            }
+                            day++;
+                        }                     
+                    </div>                            
+                    squareCount++;
+                }                                          
+            }                    
+        </div>                       
+    }
+</div> 
+<div class="calendarRowView">
+    @{ Boolean dateShown;
+        Boolean eventShown = false; }
+    @for (day = 1; day <= ViewBag.DaysInMonth; day++)
+    {
+        dateShown = false;
+        foreach (EventModel date in ViewBag.Events)
+        {
+            if (date.DayOfMonth == day)
+            {
+                if (!dateShown)
+                {
+                    <div class="RowDateLabel">
+                        @date.Date.ToString("D")
+                    </div>                    
+                    dateShown = true;
+                }      
+                <div class="RowEventLabel">
+                    @{ string time = string.IsNullOrWhiteSpace(date.EventTime) ? "No Specific Time" : date.EventTime; }
+                    <h3><a href="/event/details?eventID=@date.EventID&userID=@ViewBag.userID" target="_parent">@date.EventName</a> (@time)</h3> 
                 </div>
-                       
-            }
-        </div> 
+                eventShown = true;
+            }            
+        }        
+    }    
+    @if (!eventShown)
+        {
+            <div class="RowDateLabel">No Event This Month.</div>
+        }
+</div>

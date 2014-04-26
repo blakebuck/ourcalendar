@@ -138,10 +138,15 @@
     <Compile Include="Models\EventModels.cs" />
     <Compile Include="Models\HomeModels.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SessionAlert\SessionAlert.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\Calendar.css" />
+    <Content Include="Content\datepicker.css" />
+    <Content Include="Content\Images\calendar.png" />
+    <Content Include="Content\Images\date_delete.png" />
+    <Content Include="Content\Images\date_edit.png" />
     <Content Include="Global.asax" />
     <Content Include="MandrillAPI\obj\Debug\DesignTimeResolveAssemblyReferencesInput.cache" />
     <Content Include="MandrillAPI\obj\Debug\MandrillAPI.csprojResolveAssemblyReference.cache" />
@@ -151,6 +156,7 @@
     <Content Include="MandrillAPI\MandrillAPI.csproj" />
     <Content Include="MandrillAPI\MandrillAPI.csproj.user" />
     <Content Include="MandrillAPI\obj\Debug\MandrillAPI.csproj.FileListAbsolute.txt" />
+    <Content Include="Scripts\bootstrap-datepicker.js" />
     <Content Include="Scripts\jquery-1.7.1.js" />
     <Content Include="Scripts\jquery-1.7.1.min.js" />
     <None Include="Scripts\jquery.validate-vsdoc.js" />
@@ -190,12 +196,17 @@
     <Content Include="Views\Account\SetPassword.cshtml" />
     <Content Include="Views\Account\Forgot.cshtml" />
     <Content Include="Views\Account\Manage.cshtml" />
+    <Content Include="Views\Calendar\Manage.cshtml" />
+    <Content Include="Views\Event\Add.cshtml" />
+    <Content Include="Views\Event\Edit.cshtml" />
+    <Content Include="Views\Event\Details.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
     <Folder Include="MandrillAPI\bin\Debug\" />
     <Folder Include="MandrillAPI\obj\Debug\TempPE\" />
     <Folder Include="MandrillAPI\Properties\" />
+    <Folder Include="uploads\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
